@@ -82,7 +82,7 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
             onClick={onLogout}
             className="touch-btn-secondary text-base py-2 px-4 min-h-0"
           >
-            Abmelden
+            HOME
           </button>
         </div>
       </header>
