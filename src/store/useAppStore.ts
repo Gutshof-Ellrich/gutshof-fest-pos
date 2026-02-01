@@ -48,6 +48,8 @@ export interface Order {
   change?: number;
   timestamp: Date;
   role: UserRole;
+  tableId?: string;
+  tableName?: string;
 }
 
 export interface Printer {
@@ -55,6 +57,13 @@ export interface Printer {
   name: string;
   ipAddress: string;
   isDefault: boolean;
+}
+
+export interface Table {
+  id: string;
+  name: string;
+  isActive: boolean;
+  sortOrder: number;
 }
 
 interface AppState {
@@ -104,6 +113,17 @@ interface AppState {
   addPrinter: (printer: Printer) => void;
   updatePrinter: (id: string, updates: Partial<Printer>) => void;
   deletePrinter: (id: string) => void;
+
+  // Tables
+  tables: Table[];
+  setTables: (tables: Table[]) => void;
+  addTable: (table: Table) => void;
+  updateTable: (id: string, updates: Partial<Table>) => void;
+  deleteTable: (id: string) => void;
+
+  // Current Order State
+  selectedTableId: string | null;
+  setSelectedTableId: (id: string | null) => void;
 
   // Settings
   depositPerGlass: number;
@@ -242,6 +262,21 @@ export const useAppStore = create<AppState>()(
         printers: state.printers.filter((p) => p.id !== id)
       })),
 
+      // Tables
+      tables: [],
+      setTables: (tables) => set({ tables }),
+      addTable: (table) => set((state) => ({ tables: [...state.tables, table] })),
+      updateTable: (id, updates) => set((state) => ({
+        tables: state.tables.map((t) => t.id === id ? { ...t, ...updates } : t)
+      })),
+      deleteTable: (id) => set((state) => ({
+        tables: state.tables.filter((t) => t.id !== id)
+      })),
+
+      // Current Order State
+      selectedTableId: null,
+      setSelectedTableId: (id) => set({ selectedTableId: id }),
+
       // Settings
       depositPerGlass: 2,
       setDepositPerGlass: (value) => set({ depositPerGlass: value }),
@@ -253,6 +288,7 @@ export const useAppStore = create<AppState>()(
         products: state.products,
         orders: state.orders,
         printers: state.printers,
+        tables: state.tables,
         depositPerGlass: state.depositPerGlass,
       }),
     }

@@ -1,15 +1,21 @@
-import { CartItem, DepositInfo, ServiceType } from '@/store/useAppStore';
+import { useState } from 'react';
+import { CartItem, DepositInfo, ServiceType, Table } from '@/store/useAppStore';
+import TableSelector from './TableSelector';
 
 interface CartPanelProps {
   items: CartItem[];
   deposit: DepositInfo;
   serviceType: ServiceType;
   depositPerGlass: number;
+  selectedTableId: string | null;
+  selectedTableName: string | null;
+  tables: Table[];
   onUpdateQuantity: (productId: string, quantity: number) => void;
   onRemoveItem: (productId: string) => void;
   onSetNewDeposits: (count: number) => void;
   onSetReturnedDeposits: (count: number) => void;
   onSetServiceType: (type: ServiceType) => void;
+  onSelectTable: (tableId: string | null, tableName: string | null) => void;
   onCheckout: () => void;
   onClearCart: () => void;
 }
@@ -19,20 +25,28 @@ const CartPanel = ({
   deposit,
   serviceType,
   depositPerGlass,
+  selectedTableId,
+  selectedTableName,
+  tables,
   onUpdateQuantity,
   onRemoveItem,
   onSetNewDeposits,
   onSetReturnedDeposits,
   onSetServiceType,
+  onSelectTable,
   onCheckout,
   onClearCart,
 }: CartPanelProps) => {
+  const [showTableSelector, setShowTableSelector] = useState(false);
 
   const itemsTotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const depositNew = deposit.newDeposits * depositPerGlass;
   const depositReturn = deposit.returnedDeposits * depositPerGlass;
   const depositSaldo = depositNew - depositReturn;
   const grandTotal = itemsTotal + depositSaldo;
+
+  const activeTables = tables.filter(t => t.isActive);
+  const hasActiveTables = activeTables.length > 0;
 
   const handleQuantityChange = (productId: string, delta: number, currentQuantity: number) => {
     const newQuantity = currentQuantity + delta;
@@ -41,6 +55,31 @@ const CartPanel = ({
     } else {
       onUpdateQuantity(productId, newQuantity);
     }
+  };
+
+  const handleServiceTypeChange = (type: ServiceType) => {
+    onSetServiceType(type);
+    // Clear table selection when switching to ToGo
+    if (type === 'togo') {
+      onSelectTable(null, null);
+    }
+  };
+
+  const handleTableSelect = (tableId: string, tableName: string) => {
+    onSelectTable(tableId, tableName);
+  };
+
+  // Check if checkout is allowed
+  const canCheckout = () => {
+    const hasItems = items.length > 0 || depositSaldo !== 0;
+    if (!hasItems) return false;
+    
+    // For service orders, table is required if tables exist
+    if (serviceType === 'service' && hasActiveTables && !selectedTableId) {
+      return false;
+    }
+    
+    return true;
   };
 
   return (
@@ -181,7 +220,7 @@ const CartPanel = ({
         <label className="text-sm font-medium text-muted-foreground mb-2 block">Service-Art:</label>
         <div className="service-toggle">
           <button
-            onClick={() => onSetServiceType('service')}
+            onClick={() => handleServiceTypeChange('service')}
             className={`service-toggle-option ${
               serviceType === 'service' ? 'service-toggle-option-active' : 'service-toggle-option-inactive'
             }`}
@@ -189,7 +228,7 @@ const CartPanel = ({
             SERVICE
           </button>
           <button
-            onClick={() => onSetServiceType('togo')}
+            onClick={() => handleServiceTypeChange('togo')}
             className={`service-toggle-option ${
               serviceType === 'togo' ? 'service-toggle-option-active' : 'service-toggle-option-inactive'
             }`}
@@ -197,6 +236,29 @@ const CartPanel = ({
             TO GO
           </button>
         </div>
+
+        {/* Table Selection for Service Orders */}
+        {serviceType === 'service' && hasActiveTables && (
+          <div className="mt-3">
+            <button
+              onClick={() => setShowTableSelector(true)}
+              className={`w-full py-3 px-4 rounded-xl font-semibold text-lg transition-all flex items-center justify-center gap-2 ${
+                selectedTableId
+                  ? 'bg-primary/10 text-primary border-2 border-primary'
+                  : 'bg-destructive/10 text-destructive border-2 border-destructive animate-pulse'
+              }`}
+            >
+              {selectedTableId ? (
+                <>
+                  <span>Tisch {selectedTableName}</span>
+                  <span className="text-sm opacity-70">(ändern)</span>
+                </>
+              ) : (
+                '⚠ Tisch auswählen (Pflicht)'
+              )}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Totals & Checkout */}
@@ -212,6 +274,12 @@ const CartPanel = ({
               <span>{depositSaldo >= 0 ? '+' : ''}{depositSaldo.toFixed(2).replace('.', ',')} €</span>
             </div>
           )}
+          {serviceType === 'service' && selectedTableName && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Tisch:</span>
+              <span className="font-semibold text-primary">{selectedTableName}</span>
+            </div>
+          )}
           <div className="flex justify-between text-xl font-bold pt-2 border-t border-border">
             <span>Gesamt:</span>
             <span className="text-primary">{grandTotal.toFixed(2).replace('.', ',')} €</span>
@@ -220,12 +288,22 @@ const CartPanel = ({
 
         <button
           onClick={onCheckout}
-          disabled={items.length === 0 && depositSaldo === 0}
+          disabled={!canCheckout()}
           className="touch-btn-success w-full disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Zur Kasse
+          {serviceType === 'service' && hasActiveTables && !selectedTableId 
+            ? 'Bitte Tisch wählen' 
+            : 'Zur Kasse'}
         </button>
       </div>
+
+      {/* Table Selector Dialog */}
+      <TableSelector
+        isOpen={showTableSelector}
+        onClose={() => setShowTableSelector(false)}
+        onSelectTable={handleTableSelect}
+        selectedTableId={selectedTableId}
+      />
     </div>
   );
 };
