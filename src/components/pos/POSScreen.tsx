@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useAppStore, Product, Order, PaymentMethod } from '@/store/useAppStore';
 import CategoryGrid from './CategoryGrid';
 import ProductGrid from './ProductGrid';
@@ -18,6 +18,14 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [selectedTableName, setSelectedTableName] = useState<string | null>(null);
 
+  const { setServiceType } = useAppStore();
+
+  // Set default service type based on role
+  useEffect(() => {
+    const defaultServiceType = role === 'bar' ? 'togo' : 'service';
+    setServiceType(defaultServiceType);
+  }, [role, setServiceType]);
+
   const {
     categories,
     products,
@@ -33,7 +41,6 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     clearCart,
     setNewDeposits,
     setReturnedDeposits,
-    setServiceType,
     addOrder,
   } = useAppStore();
 
