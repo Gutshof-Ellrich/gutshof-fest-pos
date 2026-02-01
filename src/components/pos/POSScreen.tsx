@@ -4,6 +4,7 @@ import CategoryGrid from './CategoryGrid';
 import ProductGrid from './ProductGrid';
 import CartPanel from './CartPanel';
 import PaymentDialog from './PaymentDialog';
+import { printService } from '@/services/escpos';
 import { toast } from 'sonner';
 
 interface POSScreenProps {
@@ -25,6 +26,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     serviceType,
     depositPerGlass,
     tables,
+    printers,
     addToCart,
     removeFromCart,
     updateCartQuantity,
@@ -81,7 +83,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     setShowPayment(true);
   };
 
-  const handlePaymentConfirm = (paymentMethod: PaymentMethod, amountPaid?: number) => {
+  const handlePaymentConfirm = async (paymentMethod: PaymentMethod, amountPaid?: number) => {
     const itemsTotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
     const depositSaldo = (deposit.newDeposits - deposit.returnedDeposits) * depositPerGlass;
     const grandTotal = itemsTotal + depositSaldo;
@@ -104,6 +106,21 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     };
 
     addOrder(order);
+    
+    // Trigger print to appropriate printers
+    const activePrinters = printers.filter(p => p.isActive);
+    if (activePrinters.length > 0 && order.items.length > 0) {
+      const printResult = await printService.printOrder(order, printers, categories, {
+        printCustomerReceipt: true,
+      });
+      
+      if (!printResult.success && printResult.errors.length > 0) {
+        toast.warning('Druckproblem', {
+          description: printResult.errors.join(', '),
+        });
+      }
+    }
+    
     clearCart();
     setShowPayment(false);
     setSelectedCategoryId(null);

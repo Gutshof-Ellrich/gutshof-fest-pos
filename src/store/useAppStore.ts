@@ -56,7 +56,9 @@ export interface Printer {
   id: string;
   name: string;
   ipAddress: string;
+  port: number;
   isDefault: boolean;
+  isActive: boolean;
 }
 
 export interface Table {
