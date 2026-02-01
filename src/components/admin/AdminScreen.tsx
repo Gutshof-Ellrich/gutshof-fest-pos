@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { useAppStore, Category, Product, Printer } from '@/store/useAppStore';
+import { useAppStore, Category, Product } from '@/store/useAppStore';
 import { toast } from 'sonner';
 import TableManagement from './TableManagement';
+import PrinterManagement from './PrinterManagement';
 
 interface AdminScreenProps {
   onLogout: () => void;
@@ -358,77 +359,7 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
           </div>
         )}
 
-        {activeTab === 'printers' && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-2xl font-bold text-foreground">Drucker</h2>
-              <button
-                onClick={() => {
-                  const newPrinter: Printer = {
-                    id: `printer-${Date.now()}`,
-                    name: 'Neuer Drucker',
-                    ipAddress: '192.168.1.100',
-                    isDefault: printers.length === 0,
-                  };
-                  addPrinter(newPrinter);
-                  toast.success('Drucker hinzugefügt');
-                }}
-                className="touch-btn-primary"
-              >
-                + Drucker hinzufügen
-              </button>
-            </div>
-
-            <div className="grid gap-4">
-              {printers.map((printer) => (
-                <div key={printer.id} className="bg-card rounded-xl border border-border p-4 flex items-center gap-4">
-                  <input
-                    type="text"
-                    value={printer.name}
-                    onChange={(e) => updatePrinter(printer.id, { name: e.target.value })}
-                    className="flex-1 px-3 py-2 rounded-lg border border-border focus:border-primary outline-none"
-                    placeholder="Druckername"
-                  />
-                  <input
-                    type="text"
-                    value={printer.ipAddress}
-                    onChange={(e) => updatePrinter(printer.id, { ipAddress: e.target.value })}
-                    className="w-40 px-3 py-2 rounded-lg border border-border focus:border-primary outline-none"
-                    placeholder="IP-Adresse"
-                  />
-                  <button
-                    onClick={() => toast.info('Testdruck an ' + printer.name)}
-                    className="px-4 py-2 bg-muted hover:bg-muted/80 rounded-lg transition-colors"
-                  >
-                    Testdruck
-                  </button>
-                  <button
-                    onClick={() => {
-                      deletePrinter(printer.id);
-                      toast.success('Drucker gelöscht');
-                    }}
-                    className="px-4 py-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                  >
-                    Löschen
-                  </button>
-                </div>
-              ))}
-              {printers.length === 0 && (
-                <p className="text-muted-foreground text-center py-8">
-                  Noch keine Drucker konfiguriert
-                </p>
-              )}
-            </div>
-
-            <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 mt-6">
-              <h3 className="font-semibold text-amber-800 mb-2">Hinweis zur Druckeranbindung</h3>
-              <p className="text-sm text-amber-700">
-                Die Druckeranbindung über ESC/POS erfordert eine lokale Server-Komponente oder eine WebUSB-Unterstützung.
-                In dieser Demo-Version werden Druckaufträge simuliert.
-              </p>
-            </div>
-          </div>
-        )}
+        {activeTab === 'printers' && <PrinterManagement />}
       </main>
     </div>
   );
