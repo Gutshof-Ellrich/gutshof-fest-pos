@@ -1,4 +1,4 @@
-import { Product } from '@/store/useAppStore';
+import { Product, useAppStore } from '@/store/useAppStore';
 
 interface ProductGridProps {
   products: Product[];
@@ -7,6 +7,7 @@ interface ProductGridProps {
 }
 
 const ProductGrid = ({ products, onAddToCart, cartQuantities }: ProductGridProps) => {
+  const depositPerGlass = useAppStore((state) => state.depositPerGlass);
   const sortedProducts = [...products].sort((a, b) => a.sortOrder - b.sortOrder);
 
   if (products.length === 0) {
@@ -41,6 +42,11 @@ const ProductGrid = ({ products, onAddToCart, cartQuantities }: ProductGridProps
             </div>
             <div className="text-primary font-bold mt-2">
               {product.price.toFixed(2).replace('.', ',')} €
+              {product.hasDeposit && (
+                <span className="text-amber-600 text-sm font-normal ml-1">
+                  + {depositPerGlass.toFixed(2).replace('.', ',')} € Pfand
+                </span>
+              )}
             </div>
           </button>
         );
