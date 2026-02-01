@@ -31,9 +31,8 @@ const CategoryGrid = ({ categories, selectedCategoryId, onSelectCategory }: Cate
           className={`category-tile ${getCategoryTileClass(category.color)} ${
             selectedCategoryId === category.id ? 'ring-4 ring-foreground/30 scale-[1.02]' : ''
           }`}
-          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
         >
-          <span className="relative z-10">{category.name}</span>
+          <span className="relative z-10 break-words w-full">{category.name}</span>
         </button>
       ))}
     </div>
