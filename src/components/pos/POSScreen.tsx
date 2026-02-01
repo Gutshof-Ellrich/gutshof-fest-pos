@@ -213,6 +213,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
             selectedTableId={selectedTableId}
             selectedTableName={selectedTableName}
             tables={tables}
+            showDeposit={role === 'bar'}
             onUpdateQuantity={updateCartQuantity}
             onRemoveItem={removeFromCart}
             onSetNewDeposits={setNewDeposits}
