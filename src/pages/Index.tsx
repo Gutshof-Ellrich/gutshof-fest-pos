@@ -1,14 +1,32 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from 'react';
+import { useAppStore, UserRole } from '@/store/useAppStore';
+import LoginScreen from '@/components/LoginScreen';
+import POSScreen from '@/components/pos/POSScreen';
+import AdminScreen from '@/components/admin/AdminScreen';
 
 const Index = () => {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
-  );
+  const { currentRole, setRole, logout } = useAppStore();
+
+  const handleLogin = (role: UserRole) => {
+    setRole(role);
+  };
+
+  const handleLogout = () => {
+    logout();
+  };
+
+  // No role selected - show login
+  if (!currentRole) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
+
+  // Admin role
+  if (currentRole === 'admin') {
+    return <AdminScreen onLogout={handleLogout} />;
+  }
+
+  // Bar or Food role
+  return <POSScreen role={currentRole} onLogout={handleLogout} />;
 };
 
 export default Index;
