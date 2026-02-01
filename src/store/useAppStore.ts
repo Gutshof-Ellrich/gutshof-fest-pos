@@ -13,6 +13,7 @@ export interface Product {
   categoryId: string;
   imageUrl?: string;
   sortOrder: number;
+  hasDeposit?: boolean;
 }
 
 export interface Category {
@@ -211,6 +212,7 @@ export const useAppStore = create<AppState>()(
       cart: [],
       addToCart: (product) => set((state) => {
         const existing = state.cart.find((item) => item.product.id === product.id);
+        const depositIncrement = product.hasDeposit ? 1 : 0;
         if (existing) {
           return {
             cart: state.cart.map((item) =>
@@ -218,9 +220,19 @@ export const useAppStore = create<AppState>()(
                 ? { ...item, quantity: item.quantity + 1 }
                 : item
             ),
+            deposit: {
+              ...state.deposit,
+              newDeposits: state.deposit.newDeposits + depositIncrement,
+            },
           };
         }
-        return { cart: [...state.cart, { product, quantity: 1 }] };
+        return {
+          cart: [...state.cart, { product, quantity: 1 }],
+          deposit: {
+            ...state.deposit,
+            newDeposits: state.deposit.newDeposits + depositIncrement,
+          },
+        };
       }),
       removeFromCart: (productId) => set((state) => ({
         cart: state.cart.filter((item) => item.product.id !== productId)

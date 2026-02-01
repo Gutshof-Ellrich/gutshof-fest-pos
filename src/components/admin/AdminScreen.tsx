@@ -344,6 +344,15 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
                       <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
                   </select>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={product.hasDeposit || false}
+                      onChange={(e) => updateProduct(product.id, { hasDeposit: e.target.checked })}
+                      className="w-5 h-5 rounded border-border accent-primary"
+                    />
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">🍷 Pfand</span>
+                  </label>
                   <button
                     onClick={() => {
                       if (confirm('Produkt löschen?')) {
