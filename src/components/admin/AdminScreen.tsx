@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useAppStore, Category, Product, Printer } from '@/store/useAppStore';
 import { toast } from 'sonner';
+import TableManagement from './TableManagement';
 
 interface AdminScreenProps {
   onLogout: () => void;
 }
 
-type AdminTab = 'products' | 'categories' | 'deposit' | 'printers' | 'statistics';
+type AdminTab = 'products' | 'categories' | 'tables' | 'deposit' | 'printers' | 'statistics';
 
 const AdminScreen = ({ onLogout }: AdminScreenProps) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('statistics');
@@ -55,6 +56,7 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
     { id: 'statistics', label: 'Statistiken' },
     { id: 'products', label: 'Produkte' },
     { id: 'categories', label: 'Kategorien' },
+    { id: 'tables', label: 'Tische' },
     { id: 'deposit', label: 'Pfand' },
     { id: 'printers', label: 'Drucker' },
   ];
@@ -211,6 +213,8 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
             </div>
           </div>
         )}
+
+        {activeTab === 'tables' && <TableManagement />}
 
         {activeTab === 'categories' && (
           <div className="space-y-6 animate-fade-in">

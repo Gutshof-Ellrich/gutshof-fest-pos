@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useAppStore, UserRole, Product, Order, PaymentMethod } from '@/store/useAppStore';
+import { useAppStore, Product, Order, PaymentMethod } from '@/store/useAppStore';
 import CategoryGrid from './CategoryGrid';
 import ProductGrid from './ProductGrid';
 import CartPanel from './CartPanel';
@@ -14,6 +14,8 @@ interface POSScreenProps {
 const POSScreen = ({ role, onLogout }: POSScreenProps) => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [showPayment, setShowPayment] = useState(false);
+  const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
+  const [selectedTableName, setSelectedTableName] = useState<string | null>(null);
 
   const {
     categories,
@@ -22,6 +24,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     deposit,
     serviceType,
     depositPerGlass,
+    tables,
     addToCart,
     removeFromCart,
     updateCartQuantity,
@@ -57,11 +60,24 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     addToCart(product);
   };
 
+  const handleTableSelect = (tableId: string | null, tableName: string | null) => {
+    setSelectedTableId(tableId);
+    setSelectedTableName(tableName);
+  };
+
   const handleCheckout = () => {
     if (cart.length === 0 && (deposit.newDeposits === 0 && deposit.returnedDeposits === 0)) {
       toast.error('Warenkorb ist leer');
       return;
     }
+    
+    // Check table requirement for service orders
+    const activeTables = tables.filter(t => t.isActive);
+    if (serviceType === 'service' && activeTables.length > 0 && !selectedTableId) {
+      toast.error('Bitte wählen Sie einen Tisch aus');
+      return;
+    }
+    
     setShowPayment(true);
   };
 
@@ -83,15 +99,23 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
       change: amountPaid ? amountPaid - grandTotal : undefined,
       timestamp: new Date(),
       role,
+      tableId: serviceType === 'service' ? selectedTableId || undefined : undefined,
+      tableName: serviceType === 'service' ? selectedTableName || undefined : undefined,
     };
 
     addOrder(order);
     clearCart();
     setShowPayment(false);
     setSelectedCategoryId(null);
+    setSelectedTableId(null);
+    setSelectedTableName(null);
+
+    const tableInfo = serviceType === 'service' && selectedTableName 
+      ? ` – Tisch ${selectedTableName}` 
+      : '';
 
     toast.success(
-      `Bestellung ${serviceType === 'togo' ? 'TO GO' : 'SERVICE'} abgeschlossen`,
+      `Bestellung ${serviceType === 'togo' ? 'TO GO' : 'SERVICE'}${tableInfo} abgeschlossen`,
       {
         description: `${grandTotal.toFixed(2).replace('.', ',')} € - ${paymentMethod === 'cash' ? 'Bar' : 'Karte'}`,
       }
@@ -162,11 +186,15 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
             deposit={deposit}
             serviceType={serviceType}
             depositPerGlass={depositPerGlass}
+            selectedTableId={selectedTableId}
+            selectedTableName={selectedTableName}
+            tables={tables}
             onUpdateQuantity={updateCartQuantity}
             onRemoveItem={removeFromCart}
             onSetNewDeposits={setNewDeposits}
             onSetReturnedDeposits={setReturnedDeposits}
             onSetServiceType={setServiceType}
+            onSelectTable={handleTableSelect}
             onCheckout={handleCheckout}
             onClearCart={clearCart}
           />
@@ -182,6 +210,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
         deposit={deposit}
         depositPerGlass={depositPerGlass}
         serviceType={serviceType}
+        tableName={selectedTableName}
       />
     </div>
   );

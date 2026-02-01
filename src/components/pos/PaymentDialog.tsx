@@ -9,6 +9,7 @@ interface PaymentDialogProps {
   deposit: DepositInfo;
   depositPerGlass: number;
   serviceType: ServiceType;
+  tableName?: string | null;
 }
 
 const PaymentDialog = ({
@@ -19,6 +20,7 @@ const PaymentDialog = ({
   deposit,
   depositPerGlass,
   serviceType,
+  tableName,
 }: PaymentDialogProps) => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [amountPaid, setAmountPaid] = useState<string>('');
@@ -45,14 +47,20 @@ const PaymentDialog = ({
     setPaymentMethod('cash');
   };
 
+  const serviceLabel = serviceType === 'togo' 
+    ? 'TO GO' 
+    : tableName 
+      ? `SERVICE – Tisch ${tableName}`
+      : 'SERVICE';
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-card rounded-2xl shadow-soft-lg w-full max-w-lg animate-scale-in">
         {/* Header */}
         <div className="p-6 border-b border-border">
           <h2 className="font-display text-2xl font-bold text-foreground">Zahlung</h2>
-          <p className="text-muted-foreground mt-1">
-            {serviceType === 'togo' ? 'TO GO' : 'SERVICE'}
+          <p className={`mt-1 font-semibold ${serviceType === 'service' ? 'text-primary' : 'text-muted-foreground'}`}>
+            {serviceLabel}
           </p>
         </div>
 
