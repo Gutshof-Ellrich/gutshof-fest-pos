@@ -10,6 +10,7 @@ interface CartPanelProps {
   selectedTableId: string | null;
   selectedTableName: string | null;
   tables: Table[];
+  showDeposit?: boolean;
   onUpdateQuantity: (productId: string, quantity: number) => void;
   onRemoveItem: (productId: string) => void;
   onSetNewDeposits: (count: number) => void;
@@ -28,6 +29,7 @@ const CartPanel = ({
   selectedTableId,
   selectedTableName,
   tables,
+  showDeposit = true,
   onUpdateQuantity,
   onRemoveItem,
   onSetNewDeposits,
@@ -40,8 +42,8 @@ const CartPanel = ({
   const [showTableSelector, setShowTableSelector] = useState(false);
 
   const itemsTotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const depositNew = deposit.newDeposits * depositPerGlass;
-  const depositReturn = deposit.returnedDeposits * depositPerGlass;
+  const depositNew = showDeposit ? deposit.newDeposits * depositPerGlass : 0;
+  const depositReturn = showDeposit ? deposit.returnedDeposits * depositPerGlass : 0;
   const depositSaldo = depositNew - depositReturn;
   const grandTotal = itemsTotal + depositSaldo;
 
@@ -136,83 +138,85 @@ const CartPanel = ({
           </div>
         )}
 
-        {/* Deposit Section - Always Visible */}
-        <div className="mt-4 p-4 rounded-xl bg-amber-50 border-2 border-amber-200 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-amber-800">Pfand</h3>
-            <span className="text-sm text-amber-700">
-              {depositPerGlass.toFixed(2).replace('.', ',')} € / Glas
-            </span>
-          </div>
-          
-          {/* New Deposits */}
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-amber-800">Neue Gläser:</label>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => onSetNewDeposits(Math.max(0, deposit.newDeposits - 1))}
-                className="w-10 h-10 rounded-lg bg-white border border-amber-300 hover:bg-amber-100 flex items-center justify-center font-bold"
-              >
-                −
-              </button>
-              <input
-                type="number"
-                value={deposit.newDeposits}
-                onChange={(e) => onSetNewDeposits(Math.max(0, parseInt(e.target.value) || 0))}
-                className="w-16 h-10 text-center rounded-lg border border-amber-300 font-semibold"
-              />
-              <button
-                onClick={() => onSetNewDeposits(deposit.newDeposits + 1)}
-                className="w-10 h-10 rounded-lg bg-white border border-amber-300 hover:bg-amber-100 flex items-center justify-center font-bold"
-              >
-                +
-              </button>
-            </div>
-          </div>
-
-          {/* Returned Deposits */}
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-amber-800">Zurückgegebene Gläser:</label>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => onSetReturnedDeposits(Math.max(0, deposit.returnedDeposits - 1))}
-                className="w-10 h-10 rounded-lg bg-white border border-amber-300 hover:bg-amber-100 flex items-center justify-center font-bold"
-              >
-                −
-              </button>
-              <input
-                type="number"
-                value={deposit.returnedDeposits}
-                onChange={(e) => onSetReturnedDeposits(Math.max(0, parseInt(e.target.value) || 0))}
-                className="w-16 h-10 text-center rounded-lg border border-amber-300 font-semibold"
-              />
-              <button
-                onClick={() => onSetReturnedDeposits(deposit.returnedDeposits + 1)}
-                className="w-10 h-10 rounded-lg bg-white border border-amber-300 hover:bg-amber-100 flex items-center justify-center font-bold"
-              >
-                +
-              </button>
-            </div>
-          </div>
-
-          {/* Deposit Summary */}
-          <div className="pt-3 border-t border-amber-300 space-y-1 text-sm">
-            <div className="flex justify-between text-amber-800">
-              <span>Pfand neu:</span>
-              <span>+{depositNew.toFixed(2).replace('.', ',')} €</span>
-            </div>
-            <div className="flex justify-between text-amber-800">
-              <span>Pfand zurück:</span>
-              <span>−{depositReturn.toFixed(2).replace('.', ',')} €</span>
-            </div>
-            <div className="flex justify-between font-bold text-amber-900">
-              <span>Pfand-Saldo:</span>
-              <span className={depositSaldo < 0 ? 'text-green-700' : ''}>
-                {depositSaldo >= 0 ? '+' : ''}{depositSaldo.toFixed(2).replace('.', ',')} €
+        {/* Deposit Section - Only visible for bar role */}
+        {showDeposit && (
+          <div className="mt-4 p-4 rounded-xl bg-amber-50 border-2 border-amber-200 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-amber-800">Pfand</h3>
+              <span className="text-sm text-amber-700">
+                {depositPerGlass.toFixed(2).replace('.', ',')} € / Glas
               </span>
             </div>
+            
+            {/* New Deposits */}
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-amber-800">Neue Gläser:</label>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => onSetNewDeposits(Math.max(0, deposit.newDeposits - 1))}
+                  className="w-10 h-10 rounded-lg bg-white border border-amber-300 hover:bg-amber-100 flex items-center justify-center font-bold"
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  value={deposit.newDeposits}
+                  onChange={(e) => onSetNewDeposits(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-16 h-10 text-center rounded-lg border border-amber-300 font-semibold"
+                />
+                <button
+                  onClick={() => onSetNewDeposits(deposit.newDeposits + 1)}
+                  className="w-10 h-10 rounded-lg bg-white border border-amber-300 hover:bg-amber-100 flex items-center justify-center font-bold"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {/* Returned Deposits */}
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-amber-800">Zurückgegebene Gläser:</label>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => onSetReturnedDeposits(Math.max(0, deposit.returnedDeposits - 1))}
+                  className="w-10 h-10 rounded-lg bg-white border border-amber-300 hover:bg-amber-100 flex items-center justify-center font-bold"
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  value={deposit.returnedDeposits}
+                  onChange={(e) => onSetReturnedDeposits(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-16 h-10 text-center rounded-lg border border-amber-300 font-semibold"
+                />
+                <button
+                  onClick={() => onSetReturnedDeposits(deposit.returnedDeposits + 1)}
+                  className="w-10 h-10 rounded-lg bg-white border border-amber-300 hover:bg-amber-100 flex items-center justify-center font-bold"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {/* Deposit Summary */}
+            <div className="pt-3 border-t border-amber-300 space-y-1 text-sm">
+              <div className="flex justify-between text-amber-800">
+                <span>Pfand neu:</span>
+                <span>+{depositNew.toFixed(2).replace('.', ',')} €</span>
+              </div>
+              <div className="flex justify-between text-amber-800">
+                <span>Pfand zurück:</span>
+                <span>−{depositReturn.toFixed(2).replace('.', ',')} €</span>
+              </div>
+              <div className="flex justify-between font-bold text-amber-900">
+                <span>Pfand-Saldo:</span>
+                <span className={depositSaldo < 0 ? 'text-green-700' : ''}>
+                  {depositSaldo >= 0 ? '+' : ''}{depositSaldo.toFixed(2).replace('.', ',')} €
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Service Type Toggle */}
