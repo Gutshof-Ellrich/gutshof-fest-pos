@@ -32,7 +32,6 @@ const ProductGrid = ({ products, onAddToCart, cartQuantities }: ProductGridProps
             <div className="flex justify-between items-start">
               <span className="font-medium text-foreground">
                 {product.name}
-                {product.hasDeposit && <span className="text-amber-600 ml-1">🍷</span>}
               </span>
               {quantity > 0 && (
                 <span className="ml-2 min-w-[28px] h-7 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center">
