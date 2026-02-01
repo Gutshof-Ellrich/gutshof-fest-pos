@@ -3,12 +3,13 @@ import { useAppStore, Category, Product } from '@/store/useAppStore';
 import { toast } from 'sonner';
 import TableManagement from './TableManagement';
 import PrinterManagement from './PrinterManagement';
+import DataSyncManagement from './DataSyncManagement';
 
 interface AdminScreenProps {
   onLogout: () => void;
 }
 
-type AdminTab = 'products' | 'categories' | 'tables' | 'deposit' | 'printers' | 'statistics';
+type AdminTab = 'products' | 'categories' | 'tables' | 'deposit' | 'printers' | 'statistics' | 'sync';
 
 const AdminScreen = ({ onLogout }: AdminScreenProps) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('statistics');
@@ -60,6 +61,7 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
     { id: 'tables', label: 'Tische' },
     { id: 'deposit', label: 'Pfand' },
     { id: 'printers', label: 'Drucker' },
+    { id: 'sync', label: 'Synchronisation' },
   ];
 
   return (
@@ -360,6 +362,8 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
         )}
 
         {activeTab === 'printers' && <PrinterManagement />}
+        
+        {activeTab === 'sync' && <DataSyncManagement />}
       </main>
     </div>
   );
