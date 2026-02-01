@@ -26,6 +26,7 @@ const ProductGrid = ({ products, onAddToCart, cartQuantities }: ProductGridProps
             key={product.id}
             onClick={() => onAddToCart(product)}
             className={`product-btn ${quantity > 0 ? 'product-btn-selected' : ''}`}
+            style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
           >
             <div className="flex justify-between items-start">
               <span className="font-medium text-foreground">{product.name}</span>
