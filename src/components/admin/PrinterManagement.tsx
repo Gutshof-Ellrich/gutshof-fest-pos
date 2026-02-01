@@ -450,38 +450,148 @@ const PrinterManagement = () => {
 
       {/* Print Server Dialog */}
       <Dialog open={showServerDialog} onOpenChange={setShowServerDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Print-Server Einstellungen</DialogTitle>
+            <DialogTitle>Print-Server Konfiguration</DialogTitle>
             <DialogDescription>
-              Konfigurieren Sie die URL des lokalen Print-Servers. Ohne Server werden Druckaufträge simuliert.
+              Verbinden Sie die App mit einem lokalen Print-Server für echten ESC/POS-Druck.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
+          <div className="space-y-6">
+            {/* Server URL Input */}
+            <div className="space-y-2">
               <Label htmlFor="server-url">Print-Server URL</Label>
-              <Input
-                id="server-url"
-                placeholder="http://localhost:3001"
-                value={printServerUrl}
-                onChange={(e) => setPrintServerUrl(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Leer lassen für Simulationsmodus
+              <div className="flex gap-2">
+                <Input
+                  id="server-url"
+                  placeholder="http://192.168.1.100:3001"
+                  value={printServerUrl}
+                  onChange={(e) => setPrintServerUrl(e.target.value)}
+                  className="flex-1"
+                />
+                <Button 
+                  variant="outline" 
+                  onClick={async () => {
+                    if (!printServerUrl.trim()) {
+                      toast.error('Bitte geben Sie eine Server-URL ein');
+                      return;
+                    }
+                    try {
+                      const response = await fetch(`${printServerUrl.trim()}/health`, {
+                        method: 'GET',
+                        signal: AbortSignal.timeout(5000),
+                      });
+                      if (response.ok) {
+                        toast.success('Verbindung zum Print-Server erfolgreich!');
+                      } else {
+                        toast.error(`Server antwortet mit Status ${response.status}`);
+                      }
+                    } catch (error) {
+                      toast.error('Keine Verbindung zum Print-Server möglich');
+                    }
+                  }}
+                >
+                  Testen
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Leer lassen für Simulationsmodus (Druckaufträge werden nur in der Konsole protokolliert)
               </p>
             </div>
-            <div className="bg-muted/50 rounded-lg p-4 text-sm">
-              <h4 className="font-semibold mb-2">Hinweis</h4>
-              <p className="text-muted-foreground">
-                Webbrowser können nicht direkt mit Netzwerkdruckern kommunizieren. 
-                Sie benötigen einen lokalen Print-Server, der HTTP-Anfragen entgegennimmt 
-                und diese über TCP/IP an die Drucker weiterleitet.
-              </p>
+
+            {/* Setup Instructions */}
+            <div className="bg-muted/50 rounded-xl p-5 space-y-4">
+              <h4 className="font-semibold text-foreground flex items-center gap-2">
+                <Settings2 className="w-4 h-4" />
+                Print-Server Einrichtung
+              </h4>
+              
+              <div className="text-sm text-muted-foreground space-y-3">
+                <p>
+                  <strong className="text-foreground">Warum ein Print-Server?</strong><br />
+                  Webbrowser können aus Sicherheitsgründen nicht direkt über TCP/IP mit Netzwerkdruckern 
+                  kommunizieren. Der Print-Server empfängt HTTP-Anfragen und leitet diese an die Drucker weiter.
+                </p>
+                
+                <div className="border-t border-border pt-3">
+                  <strong className="text-foreground">Option 1: Node.js Print-Server (empfohlen)</strong>
+                  <div className="mt-2 bg-background rounded-lg p-3 font-mono text-xs overflow-x-auto">
+                    <div className="text-muted-foreground"># Installation</div>
+                    <div>npm install -g escpos-http-server</div>
+                    <div className="mt-2 text-muted-foreground"># Server starten</div>
+                    <div>escpos-http-server --port 3001</div>
+                  </div>
+                </div>
+
+                <div className="border-t border-border pt-3">
+                  <strong className="text-foreground">Option 2: Python Print-Server</strong>
+                  <div className="mt-2 bg-background rounded-lg p-3 font-mono text-xs overflow-x-auto">
+                    <div className="text-muted-foreground"># Installation</div>
+                    <div>pip install flask python-escpos</div>
+                    <div className="mt-2 text-muted-foreground"># Dann eigenen Server erstellen (siehe Dokumentation)</div>
+                  </div>
+                </div>
+
+                <div className="border-t border-border pt-3">
+                  <strong className="text-foreground">API-Endpunkt</strong><br />
+                  Der Print-Server muss einen POST-Endpunkt <code className="bg-background px-1 rounded">/print</code> bereitstellen:
+                  <div className="mt-2 bg-background rounded-lg p-3 font-mono text-xs overflow-x-auto">
+                    <div className="text-muted-foreground">POST /print</div>
+                    <div>{'{'}</div>
+                    <div>  "ip": "192.168.1.50",</div>
+                    <div>  "port": 9100,</div>
+                    <div>  "data": "base64-encoded-escpos-data"</div>
+                    <div>{'}'}</div>
+                  </div>
+                </div>
+
+                <div className="border-t border-border pt-3">
+                  <strong className="text-foreground">Netzwerk-Tipps</strong>
+                  <ul className="list-disc list-inside mt-1 space-y-1">
+                    <li>Print-Server muss im selben Netzwerk wie die Drucker laufen</li>
+                    <li>Falls App auf Tablet läuft: Server-IP statt localhost verwenden</li>
+                    <li>Firewall-Port freigeben (Standard: 3001)</li>
+                    <li>Drucker-Port ist üblicherweise 9100 (Raw/JetDirect)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Current Status */}
+            <div className={`rounded-lg border-2 p-4 ${printServerUrl.trim() ? 'bg-primary/5 border-primary/20' : 'bg-amber-50 border-amber-200'}`}>
+              <div className="flex items-center gap-3">
+                {printServerUrl.trim() ? (
+                  <Wifi className="w-5 h-5 text-primary" />
+                ) : (
+                  <WifiOff className="w-5 h-5 text-amber-600" />
+                )}
+                <div>
+                  <span className={`font-medium ${printServerUrl.trim() ? 'text-primary' : 'text-amber-700'}`}>
+                    {printServerUrl.trim() ? 'Server-Modus' : 'Simulationsmodus'}
+                  </span>
+                  <p className="text-xs text-muted-foreground">
+                    {printServerUrl.trim() 
+                      ? 'Druckaufträge werden an den Print-Server gesendet'
+                      : 'Druckaufträge werden nur in der Browser-Konsole protokolliert'}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowServerDialog(false)}>Abbrechen</Button>
-            <Button onClick={handleSavePrintServer}>Speichern</Button>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => {
+              setPrintServerUrl('');
+              printQueue.setPrintServerUrl(null);
+              toast.info('Simulationsmodus aktiviert');
+            }}>
+              Simulation verwenden
+            </Button>
+            <Button variant="outline" onClick={() => setShowServerDialog(false)}>
+              Abbrechen
+            </Button>
+            <Button onClick={handleSavePrintServer}>
+              Speichern
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
