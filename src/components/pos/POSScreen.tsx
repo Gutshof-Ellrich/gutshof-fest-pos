@@ -72,10 +72,6 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
 
   const handleAddToCart = (product: Product) => {
     addToCart(product);
-    // Auto-open cart on mobile when adding items
-    if (isMobile) {
-      setMobileCartOpen(true);
-    }
   };
 
   const handleTableSelect = (tableId: string | null, tableName: string | null) => {
