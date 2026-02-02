@@ -4,10 +4,11 @@ import CategoryGrid from './CategoryGrid';
 import ProductGrid from './ProductGrid';
 import CartPanel from './CartPanel';
 import PaymentDialog from './PaymentDialog';
+import OpenTablesPanel from './OpenTablesPanel';
 import { printService } from '@/services/escpos';
 import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Clock } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface POSScreenProps {
@@ -18,6 +19,7 @@ interface POSScreenProps {
 const POSScreen = ({ role, onLogout }: POSScreenProps) => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [showPayment, setShowPayment] = useState(false);
+  const [showOpenTables, setShowOpenTables] = useState(false);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [selectedTableName, setSelectedTableName] = useState<string | null>(null);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
@@ -39,6 +41,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     serviceType,
     depositPerGlass,
     tables,
+    tableTabs,
     printers,
     addToCart,
     removeFromCart,
@@ -47,6 +50,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     setNewDeposits,
     setReturnedDeposits,
     addOrder,
+    addToTableTab,
   } = useAppStore();
 
   // Filter categories based on role
@@ -95,7 +99,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     setShowPayment(true);
   };
 
-  const handlePaymentConfirm = async (paymentMethod: PaymentMethod, amountPaid?: number) => {
+  const handlePaymentConfirm = async (paymentMethod: PaymentMethod, payNow: boolean, amountPaid?: number) => {
     const itemsTotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
     const depositSaldo = (deposit.newDeposits - deposit.returnedDeposits) * depositPerGlass;
     const grandTotal = itemsTotal + depositSaldo;
@@ -105,25 +109,31 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
       items: [...cart],
       deposit: { ...deposit, depositValue: depositPerGlass },
       serviceType,
-      paymentMethod,
+      paymentMethod: payNow ? paymentMethod : 'cash', // Default for unpaid orders
       total: itemsTotal,
       depositTotal: depositSaldo,
       grandTotal,
-      amountPaid,
-      change: amountPaid ? amountPaid - grandTotal : undefined,
+      amountPaid: payNow ? amountPaid : undefined,
+      change: payNow && amountPaid ? amountPaid - grandTotal : undefined,
       timestamp: new Date(),
       role,
       tableId: serviceType === 'service' ? selectedTableId || undefined : undefined,
       tableName: serviceType === 'service' ? selectedTableName || undefined : undefined,
+      isPaid: payNow,
     };
 
     addOrder(order);
+
+    // If pay later, add to table tab
+    if (!payNow && serviceType === 'service' && selectedTableId && selectedTableName) {
+      addToTableTab(selectedTableId, selectedTableName, order);
+    }
     
     // Trigger print to appropriate printers
     const activePrinters = printers.filter(p => p.isActive);
     if (activePrinters.length > 0 && order.items.length > 0) {
       const printResult = await printService.printOrder(order, printers, categories, {
-        printCustomerReceipt: true,
+        printCustomerReceipt: payNow, // Only print customer receipt if paying now
       });
       
       if (!printResult.success && printResult.errors.length > 0) {
@@ -143,16 +153,28 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
       ? ` – Tisch ${selectedTableName}` 
       : '';
 
-    toast.success(
-      `Bestellung ${serviceType === 'togo' ? 'TO GO' : 'SERVICE'}${tableInfo} abgeschlossen`,
-      {
-        description: `${grandTotal.toFixed(2).replace('.', ',')} € - ${paymentMethod === 'cash' ? 'Bar' : 'Karte'}`,
-      }
-    );
+    if (payNow) {
+      toast.success(
+        `Bestellung ${serviceType === 'togo' ? 'TO GO' : 'SERVICE'}${tableInfo} abgeschlossen`,
+        {
+          description: `${grandTotal.toFixed(2).replace('.', ',')} € - ${paymentMethod === 'cash' ? 'Bar' : 'Karte'}`,
+        }
+      );
+    } else {
+      toast.success(
+        `Bestellung auf Tisch ${selectedTableName} gebucht`,
+        {
+          description: `${grandTotal.toFixed(2).replace('.', ',')} € - Zahlung später`,
+        }
+      );
+    }
   };
 
   const roleTitle = role === 'bar' ? 'Getränke' : 'Speisen';
   const roleColor = role === 'bar' ? 'text-primary' : 'text-success';
+  
+  // Count open tables for badge
+  const openTablesCount = tableTabs.length;
 
   // Calculate total items in cart for badge
   const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -195,12 +217,27 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
               {roleTitle}
             </span>
           </div>
-          <button
-            onClick={onLogout}
-            className="touch-btn-secondary text-sm md:text-base py-1.5 px-3 md:py-2 md:px-4 min-h-0"
-          >
-            HOME
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Open Tables Button */}
+            <button
+              onClick={() => setShowOpenTables(true)}
+              className="relative touch-btn-secondary text-sm md:text-base py-1.5 px-3 md:py-2 md:px-4 min-h-0 flex items-center gap-1"
+            >
+              <Clock className="w-4 h-4" />
+              <span className="hidden md:inline">Offene Tische</span>
+              {openTablesCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[20px] h-5 rounded-full bg-amber-500 text-white text-xs font-bold flex items-center justify-center">
+                  {openTablesCount}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={onLogout}
+              className="touch-btn-secondary text-sm md:text-base py-1.5 px-3 md:py-2 md:px-4 min-h-0"
+            >
+              HOME
+            </button>
+          </div>
         </div>
       </header>
 
@@ -280,6 +317,13 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
         depositPerGlass={depositPerGlass}
         serviceType={serviceType}
         tableName={selectedTableName}
+        allowPayLater={serviceType === 'service' && !!selectedTableId}
+      />
+
+      {/* Open Tables Panel */}
+      <OpenTablesPanel
+        isOpen={showOpenTables}
+        onClose={() => setShowOpenTables(false)}
       />
     </div>
   );

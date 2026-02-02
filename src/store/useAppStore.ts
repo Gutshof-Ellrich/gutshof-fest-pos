@@ -51,6 +51,16 @@ export interface Order {
   role: UserRole;
   tableId?: string;
   tableName?: string;
+  isPaid: boolean;
+}
+
+export interface TableTab {
+  tableId: string;
+  tableName: string;
+  orders: Order[];
+  totalAmount: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Printer {
@@ -108,6 +118,7 @@ interface AppState {
   // Orders
   orders: Order[];
   addOrder: (order: Order) => void;
+  markOrderPaid: (orderId: string, paymentMethod: PaymentMethod, amountPaid?: number, change?: number) => void;
   clearOrders: () => void;
 
   // Printers
@@ -127,6 +138,13 @@ interface AppState {
   // Current Order State
   selectedTableId: string | null;
   setSelectedTableId: (id: string | null) => void;
+
+  // Table Tabs (open orders)
+  tableTabs: TableTab[];
+  addToTableTab: (tableId: string, tableName: string, order: Order) => void;
+  settleTableTab: (tableId: string, paymentMethod: PaymentMethod, amountPaid?: number) => void;
+  getTableTab: (tableId: string) => TableTab | undefined;
+  clearTableTab: (tableId: string) => void;
 
   // Settings
   depositPerGlass: number;
@@ -263,6 +281,13 @@ export const useAppStore = create<AppState>()(
       // Orders
       orders: [],
       addOrder: (order) => set((state) => ({ orders: [order, ...state.orders] })),
+      markOrderPaid: (orderId, paymentMethod, amountPaid, change) => set((state) => ({
+        orders: state.orders.map((o) =>
+          o.id === orderId
+            ? { ...o, isPaid: true, paymentMethod, amountPaid, change }
+            : o
+        ),
+      })),
       clearOrders: () => set({ orders: [] }),
 
       // Printers
@@ -291,6 +316,60 @@ export const useAppStore = create<AppState>()(
       selectedTableId: null,
       setSelectedTableId: (id) => set({ selectedTableId: id }),
 
+      // Table Tabs (open orders)
+      tableTabs: [],
+      addToTableTab: (tableId, tableName, order) => set((state) => {
+        const existingTab = state.tableTabs.find((t) => t.tableId === tableId);
+        if (existingTab) {
+          return {
+            tableTabs: state.tableTabs.map((t) =>
+              t.tableId === tableId
+                ? {
+                    ...t,
+                    orders: [...t.orders, order],
+                    totalAmount: t.totalAmount + order.grandTotal,
+                    updatedAt: new Date(),
+                  }
+                : t
+            ),
+          };
+        }
+        return {
+          tableTabs: [
+            ...state.tableTabs,
+            {
+              tableId,
+              tableName,
+              orders: [order],
+              totalAmount: order.grandTotal,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+        };
+      }),
+      settleTableTab: (tableId, paymentMethod, amountPaid) => set((state) => {
+        const tab = state.tableTabs.find((t) => t.tableId === tableId);
+        if (!tab) return state;
+        
+        const change = amountPaid ? amountPaid - tab.totalAmount : undefined;
+        
+        // Mark all orders in the tab as paid
+        const updatedOrders = state.orders.map((o) => {
+          const isInTab = tab.orders.some((tabOrder) => tabOrder.id === o.id);
+          return isInTab ? { ...o, isPaid: true, paymentMethod, amountPaid, change } : o;
+        });
+        
+        return {
+          orders: updatedOrders,
+          tableTabs: state.tableTabs.filter((t) => t.tableId !== tableId),
+        };
+      }),
+      getTableTab: (tableId) => get().tableTabs.find((t) => t.tableId === tableId),
+      clearTableTab: (tableId) => set((state) => ({
+        tableTabs: state.tableTabs.filter((t) => t.tableId !== tableId),
+      })),
+
       // Settings
       depositPerGlass: 2,
       setDepositPerGlass: (value) => set({ depositPerGlass: value }),
@@ -303,6 +382,7 @@ export const useAppStore = create<AppState>()(
         orders: state.orders,
         printers: state.printers,
         tables: state.tables,
+        tableTabs: state.tableTabs,
         depositPerGlass: state.depositPerGlass,
       }),
     }
