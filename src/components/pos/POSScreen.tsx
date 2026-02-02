@@ -5,10 +5,11 @@ import ProductGrid from './ProductGrid';
 import CartPanel from './CartPanel';
 import PaymentDialog from './PaymentDialog';
 import OpenTablesPanel from './OpenTablesPanel';
+import OrderHistoryDialog from './OrderHistoryDialog';
 import { printService } from '@/services/escpos';
 import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { ShoppingCart, Clock } from 'lucide-react';
+import { ShoppingCart, Clock, Receipt } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface POSScreenProps {
@@ -20,6 +21,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [showPayment, setShowPayment] = useState(false);
   const [showOpenTables, setShowOpenTables] = useState(false);
+  const [showOrderHistory, setShowOrderHistory] = useState(false);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [selectedTableName, setSelectedTableName] = useState<string | null>(null);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
@@ -44,6 +46,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     tables,
     tableTabs,
     printers,
+    orders,
     addToCart,
     removeFromCart,
     updateCartQuantity,
@@ -185,6 +188,13 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
   
   // Count open tables for badge
   const openTablesCount = tableTabs.length;
+  
+  // Count completed orders today for badge
+  const todayOrdersCount = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return orders.filter(o => o.isPaid && new Date(o.timestamp) >= today).length;
+  }, [orders]);
 
   // Calculate total items in cart for badge
   const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -228,6 +238,19 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
             </span>
           </div>
           <div className="flex items-center gap-2">
+            {/* Order History Button */}
+            <button
+              onClick={() => setShowOrderHistory(true)}
+              className="relative touch-btn-secondary text-sm md:text-base py-1.5 px-3 md:py-2 md:px-4 min-h-0 flex items-center gap-1"
+            >
+              <Receipt className="w-4 h-4" />
+              <span className="hidden md:inline">Historie</span>
+              {todayOrdersCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[20px] h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
+                  {todayOrdersCount}
+                </span>
+              )}
+            </button>
             {/* Open Tables Button */}
             <button
               onClick={() => setShowOpenTables(true)}
@@ -335,6 +358,12 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
       <OpenTablesPanel
         isOpen={showOpenTables}
         onClose={() => setShowOpenTables(false)}
+      />
+
+      {/* Order History Dialog */}
+      <OrderHistoryDialog
+        isOpen={showOrderHistory}
+        onClose={() => setShowOrderHistory(false)}
       />
     </div>
   );
