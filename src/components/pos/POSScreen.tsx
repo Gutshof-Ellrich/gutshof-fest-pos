@@ -6,6 +6,9 @@ import CartPanel from './CartPanel';
 import PaymentDialog from './PaymentDialog';
 import { printService } from '@/services/escpos';
 import { toast } from 'sonner';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { ShoppingCart } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface POSScreenProps {
   role: 'bar' | 'food';
@@ -17,6 +20,8 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
   const [showPayment, setShowPayment] = useState(false);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [selectedTableName, setSelectedTableName] = useState<string | null>(null);
+  const [mobileCartOpen, setMobileCartOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const { setServiceType } = useAppStore();
 
@@ -67,6 +72,10 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
 
   const handleAddToCart = (product: Product) => {
     addToCart(product);
+    // Auto-open cart on mobile when adding items
+    if (isMobile) {
+      setMobileCartOpen(true);
+    }
   };
 
   const handleTableSelect = (tableId: string | null, tableName: string | null) => {
@@ -149,6 +158,33 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
   const roleTitle = role === 'bar' ? 'Getränke' : 'Speisen';
   const roleColor = role === 'bar' ? 'text-primary' : 'text-success';
 
+  // Calculate total items in cart for badge
+  const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const cartTotal = useMemo(() => {
+    const itemsTotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+    const depositSaldo = role === 'bar' ? (deposit.newDeposits - deposit.returnedDeposits) * depositPerGlass : 0;
+    return itemsTotal + depositSaldo;
+  }, [cart, deposit, depositPerGlass, role]);
+
+  const cartPanelProps = {
+    items: cart,
+    deposit,
+    serviceType,
+    depositPerGlass,
+    selectedTableId,
+    selectedTableName,
+    tables,
+    showDeposit: role === 'bar',
+    onUpdateQuantity: updateCartQuantity,
+    onRemoveItem: removeFromCart,
+    onSetNewDeposits: setNewDeposits,
+    onSetReturnedDeposits: setReturnedDeposits,
+    onSetServiceType: setServiceType,
+    onSelectTable: handleTableSelect,
+    onCheckout: handleCheckout,
+    onClearCart: clearCart,
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
@@ -172,10 +208,10 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
         </div>
       </header>
 
-      {/* Main Content - Stacked on mobile, side-by-side on tablet+ */}
+      {/* Main Content */}
       <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Left Side - Categories & Products */}
-        <div className="flex-1 overflow-y-auto p-3 md:p-6 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-3 md:p-6 pb-24 lg:pb-6 custom-scrollbar">
           {/* Categories */}
           <div className="mb-4 md:mb-6">
             <h2 className="font-display text-base md:text-lg font-semibold text-muted-foreground mb-2 md:mb-4">
@@ -203,28 +239,40 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
           </div>
         </div>
 
-        {/* Right Side - Cart (full width on mobile, fixed width on tablet+) */}
-        <div className="lg:w-[400px] border-t lg:border-t-0 lg:border-l border-border p-2 md:p-4 flex flex-col max-h-[50vh] lg:max-h-none">
-          <CartPanel
-            items={cart}
-            deposit={deposit}
-            serviceType={serviceType}
-            depositPerGlass={depositPerGlass}
-            selectedTableId={selectedTableId}
-            selectedTableName={selectedTableName}
-            tables={tables}
-            showDeposit={role === 'bar'}
-            onUpdateQuantity={updateCartQuantity}
-            onRemoveItem={removeFromCart}
-            onSetNewDeposits={setNewDeposits}
-            onSetReturnedDeposits={setReturnedDeposits}
-            onSetServiceType={setServiceType}
-            onSelectTable={handleTableSelect}
-            onCheckout={handleCheckout}
-            onClearCart={clearCart}
-          />
+        {/* Desktop Cart - Hidden on mobile */}
+        <div className="hidden lg:flex lg:w-[400px] border-l border-border p-4 flex-col">
+          <CartPanel {...cartPanelProps} />
         </div>
       </main>
+
+      {/* Mobile Floating Cart Button */}
+      <div className="lg:hidden fixed bottom-4 right-4 z-50">
+        <Sheet open={mobileCartOpen} onOpenChange={setMobileCartOpen}>
+          <SheetTrigger asChild>
+            <button className="relative w-16 h-16 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors">
+              <ShoppingCart className="w-7 h-7" />
+              {totalCartItems > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[24px] h-6 rounded-full bg-destructive text-destructive-foreground text-sm font-bold flex items-center justify-center px-1">
+                  {totalCartItems}
+                </span>
+              )}
+              {cartTotal > 0 && (
+                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-card text-foreground text-xs font-semibold px-2 py-0.5 rounded-full shadow border border-border whitespace-nowrap">
+                  {cartTotal.toFixed(2).replace('.', ',')} €
+                </span>
+              )}
+            </button>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="h-[85vh] p-0 rounded-t-2xl">
+            <div className="h-full flex flex-col">
+              <div className="w-12 h-1.5 bg-muted rounded-full mx-auto mt-3 mb-2" />
+              <div className="flex-1 overflow-hidden p-3">
+                <CartPanel {...cartPanelProps} />
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
 
       {/* Payment Dialog */}
       <PaymentDialog
