@@ -119,6 +119,7 @@ interface AppState {
   orders: Order[];
   addOrder: (order: Order) => void;
   markOrderPaid: (orderId: string, paymentMethod: PaymentMethod, amountPaid?: number, change?: number) => void;
+  deleteOrder: (orderId: string) => void;
   clearOrders: () => void;
 
   // Printers
@@ -291,6 +292,9 @@ export const useAppStore = create<AppState>()(
             ? { ...o, isPaid: true, paymentMethod, amountPaid, change }
             : o
         ),
+      })),
+      deleteOrder: (orderId) => set((state) => ({
+        orders: state.orders.filter((o) => o.id !== orderId),
       })),
       clearOrders: () => set({ orders: [] }),
 
