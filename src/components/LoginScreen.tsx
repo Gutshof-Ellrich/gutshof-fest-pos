@@ -24,7 +24,7 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
             Bitte wählen Sie Ihren Bereich
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Bar Login */}
             <button
               onClick={() => onLogin('bar')}
@@ -58,6 +58,25 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
                 <h3 className="text-2xl font-display font-bold">Essen</h3>
                 <p className="text-white/80 text-sm">
                   Speisen & Grill
+                </p>
+              </div>
+              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors rounded-2xl" />
+            </button>
+
+            {/* Combined Login */}
+            <button
+              onClick={() => onLogin('combined')}
+              className="login-card bg-gradient-to-br from-violet-600 to-purple-700 text-white group"
+            >
+              <div className="space-y-4">
+                <div className="w-20 h-20 mx-auto rounded-full bg-white/20 flex items-center justify-center">
+                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-display font-bold">Komplett</h3>
+                <p className="text-white/80 text-sm">
+                  Getränke & Speisen
                 </p>
               </div>
               <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors rounded-2xl" />

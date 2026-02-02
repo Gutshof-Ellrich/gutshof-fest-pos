@@ -12,7 +12,7 @@ import { ShoppingCart, Clock } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface POSScreenProps {
-  role: 'bar' | 'food';
+  role: 'bar' | 'food' | 'combined';
   onLogout: () => void;
 }
 
@@ -29,6 +29,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
 
   // Set default service type based on role
   useEffect(() => {
+    // Bar defaults to togo, food and combined default to service
     const defaultServiceType = role === 'bar' ? 'togo' : 'service';
     setServiceType(defaultServiceType);
   }, [role, setServiceType]);
@@ -55,9 +56,16 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
 
   // Filter categories based on role
   const filteredCategories = useMemo(() => {
+    if (role === 'combined') {
+      // Show all categories for combined role
+      return [...categories].sort((a, b) => a.sortOrder - b.sortOrder);
+    }
     const type = role === 'bar' ? 'drinks' : 'food';
     return categories.filter((cat) => cat.type === type);
   }, [categories, role]);
+
+  // Determine if deposit should be shown (bar and combined roles)
+  const showDeposit = role === 'bar' || role === 'combined';
 
   // Get products for selected category
   const categoryProducts = useMemo(() => {
@@ -170,8 +178,8 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     }
   };
 
-  const roleTitle = role === 'bar' ? 'Getränke' : 'Speisen';
-  const roleColor = role === 'bar' ? 'text-primary' : 'text-success';
+  const roleTitle = role === 'bar' ? 'Getränke' : role === 'food' ? 'Speisen' : 'Komplett';
+  const roleColor = role === 'bar' ? 'text-primary' : role === 'food' ? 'text-success' : 'text-violet-600';
   
   // Count open tables for badge
   const openTablesCount = tableTabs.length;
@@ -180,9 +188,9 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
   const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
   const cartTotal = useMemo(() => {
     const itemsTotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-    const depositSaldo = role === 'bar' ? (deposit.newDeposits - deposit.returnedDeposits) * depositPerGlass : 0;
+    const depositSaldo = showDeposit ? (deposit.newDeposits - deposit.returnedDeposits) * depositPerGlass : 0;
     return itemsTotal + depositSaldo;
-  }, [cart, deposit, depositPerGlass, role]);
+  }, [cart, deposit, depositPerGlass, showDeposit]);
 
   const cartPanelProps = {
     items: cart,
@@ -192,7 +200,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     selectedTableId,
     selectedTableName,
     tables,
-    showDeposit: role === 'bar',
+    showDeposit,
     onUpdateQuantity: updateCartQuantity,
     onRemoveItem: removeFromCart,
     onSetNewDeposits: setNewDeposits,

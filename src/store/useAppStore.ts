@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 // Types
-export type UserRole = 'bar' | 'food' | 'admin' | null;
+export type UserRole = 'bar' | 'food' | 'combined' | 'admin' | null;
 export type ServiceType = 'service' | 'togo';
 export type PaymentMethod = 'cash' | 'card';
 
