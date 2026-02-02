@@ -19,30 +19,30 @@ const ProductGrid = ({ products, onAddToCart, cartQuantities }: ProductGridProps
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-2 md:gap-3">
       {sortedProducts.map((product) => {
         const quantity = cartQuantities[product.id] || 0;
         return (
           <button
             key={product.id}
             onClick={() => onAddToCart(product)}
-            className={`product-btn ${quantity > 0 ? 'product-btn-selected' : ''}`}
+            className={`product-btn p-2 md:p-4 ${quantity > 0 ? 'product-btn-selected' : ''}`}
             style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
           >
             <div className="flex justify-between items-start">
-              <span className="font-medium text-foreground">
+              <span className="font-medium text-foreground text-sm md:text-base leading-tight">
                 {product.name}
               </span>
               {quantity > 0 && (
-                <span className="ml-2 min-w-[28px] h-7 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center">
+                <span className="ml-1 md:ml-2 min-w-[22px] md:min-w-[28px] h-5 md:h-7 rounded-full bg-primary text-primary-foreground text-xs md:text-sm font-bold flex items-center justify-center">
                   {quantity}
                 </span>
               )}
             </div>
-            <div className="text-primary font-bold mt-2">
+            <div className="text-primary font-bold mt-1 md:mt-2 text-sm md:text-base">
               {product.price.toFixed(2).replace('.', ',')} €
               {product.hasDeposit && (
-                <span className="text-amber-600 text-sm font-normal ml-1">
+                <span className="text-amber-600 text-xs md:text-sm font-normal ml-1">
                   + {depositPerGlass.toFixed(2).replace('.', ',')} € Pfand
                 </span>
               )}

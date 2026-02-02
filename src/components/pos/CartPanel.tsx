@@ -87,12 +87,12 @@ const CartPanel = ({
   return (
     <div className="bg-card rounded-2xl border border-border shadow-soft h-full flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-border flex items-center justify-between">
-        <h2 className="font-display text-xl font-semibold text-foreground">Warenkorb</h2>
+      <div className="p-2 md:p-4 border-b border-border flex items-center justify-between">
+        <h2 className="font-display text-base md:text-xl font-semibold text-foreground">Warenkorb</h2>
         {items.length > 0 && (
           <button
             onClick={onClearCart}
-            className="text-sm text-destructive hover:underline"
+            className="text-xs md:text-sm text-destructive hover:underline"
           >
             Leeren
           </button>
@@ -100,37 +100,37 @@ const CartPanel = ({
       </div>
 
       {/* Cart Items */}
-      <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-2 md:p-4 custom-scrollbar">
         {items.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-muted-foreground">
-            <p>Keine Artikel im Warenkorb</p>
+          <div className="flex items-center justify-center h-16 md:h-32 text-muted-foreground">
+            <p className="text-sm md:text-base">Keine Artikel im Warenkorb</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1 md:space-y-2">
             {items.map((item) => (
-              <div key={item.product.id} className="cart-item">
-                <div className="flex-1">
-                  <p className="font-medium text-foreground">{item.product.name}</p>
-                  <p className="text-sm text-muted-foreground">
+              <div key={item.product.id} className="cart-item p-1.5 md:p-2">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-foreground text-sm md:text-base truncate">{item.product.name}</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">
                     {item.product.price.toFixed(2).replace('.', ',')} € × {item.quantity}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 md:gap-2">
                   <button
                     onClick={() => handleQuantityChange(item.product.id, -1, item.quantity)}
-                    className="w-10 h-10 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center font-bold text-lg"
+                    className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center font-bold text-base md:text-lg"
                   >
                     −
                   </button>
-                  <span className="w-8 text-center font-semibold">{item.quantity}</span>
+                  <span className="w-6 md:w-8 text-center font-semibold text-sm md:text-base">{item.quantity}</span>
                   <button
                     onClick={() => handleQuantityChange(item.product.id, 1, item.quantity)}
-                    className="w-10 h-10 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center font-bold text-lg"
+                    className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center font-bold text-base md:text-lg"
                   >
                     +
                   </button>
                 </div>
-                <div className="w-20 text-right font-semibold text-foreground">
+                <div className="w-16 md:w-20 text-right font-semibold text-foreground text-sm md:text-base">
                   {(item.product.price * item.quantity).toFixed(2).replace('.', ',')} €
                 </div>
               </div>
@@ -220,12 +220,12 @@ const CartPanel = ({
       </div>
 
       {/* Service Type Toggle */}
-      <div className="p-4 border-t border-border">
-        <label className="text-sm font-medium text-muted-foreground mb-2 block">Service-Art:</label>
+      <div className="p-2 md:p-4 border-t border-border">
+        <label className="text-xs md:text-sm font-medium text-muted-foreground mb-1 md:mb-2 block">Service-Art:</label>
         <div className="service-toggle">
           <button
             onClick={() => handleServiceTypeChange('service')}
-            className={`service-toggle-option ${
+            className={`service-toggle-option text-xs md:text-sm py-2 md:py-3 ${
               serviceType === 'service' ? 'service-toggle-option-active' : 'service-toggle-option-inactive'
             }`}
           >
@@ -233,7 +233,7 @@ const CartPanel = ({
           </button>
           <button
             onClick={() => handleServiceTypeChange('togo')}
-            className={`service-toggle-option ${
+            className={`service-toggle-option text-xs md:text-sm py-2 md:py-3 ${
               serviceType === 'togo' ? 'service-toggle-option-active' : 'service-toggle-option-inactive'
             }`}
           >
@@ -243,10 +243,10 @@ const CartPanel = ({
 
         {/* Table Selection for Service Orders */}
         {serviceType === 'service' && hasActiveTables && (
-          <div className="mt-3">
+          <div className="mt-2 md:mt-3">
             <button
               onClick={() => setShowTableSelector(true)}
-              className={`w-full py-3 px-4 rounded-xl font-semibold text-lg transition-all flex items-center justify-center gap-2 ${
+              className={`w-full py-2 md:py-3 px-3 md:px-4 rounded-xl font-semibold text-sm md:text-lg transition-all flex items-center justify-center gap-1 md:gap-2 ${
                 selectedTableId
                   ? 'bg-primary/10 text-primary border-2 border-primary'
                   : 'bg-destructive/10 text-destructive border-2 border-destructive animate-pulse'
@@ -255,7 +255,7 @@ const CartPanel = ({
               {selectedTableId ? (
                 <>
                   <span>Tisch {selectedTableName}</span>
-                  <span className="text-sm opacity-70">(ändern)</span>
+                  <span className="text-xs md:text-sm opacity-70">(ändern)</span>
                 </>
               ) : (
                 '⚠ Tisch auswählen (Pflicht)'
@@ -266,25 +266,25 @@ const CartPanel = ({
       </div>
 
       {/* Totals & Checkout */}
-      <div className="p-4 border-t border-border bg-muted/50 rounded-b-2xl">
-        <div className="space-y-2 mb-4">
-          <div className="flex justify-between text-sm">
+      <div className="p-2 md:p-4 border-t border-border bg-muted/50 rounded-b-2xl">
+        <div className="space-y-1 md:space-y-2 mb-2 md:mb-4">
+          <div className="flex justify-between text-xs md:text-sm">
             <span className="text-muted-foreground">Artikel:</span>
             <span>{itemsTotal.toFixed(2).replace('.', ',')} €</span>
           </div>
           {depositSaldo !== 0 && (
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-xs md:text-sm">
               <span className="text-muted-foreground">Pfand-Saldo:</span>
               <span>{depositSaldo >= 0 ? '+' : ''}{depositSaldo.toFixed(2).replace('.', ',')} €</span>
             </div>
           )}
           {serviceType === 'service' && selectedTableName && (
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-xs md:text-sm">
               <span className="text-muted-foreground">Tisch:</span>
               <span className="font-semibold text-primary">{selectedTableName}</span>
             </div>
           )}
-          <div className="flex justify-between text-xl font-bold pt-2 border-t border-border">
+          <div className="flex justify-between text-base md:text-xl font-bold pt-1 md:pt-2 border-t border-border">
             <span>Gesamt:</span>
             <span className="text-primary">{grandTotal.toFixed(2).replace('.', ',')} €</span>
           </div>
@@ -293,7 +293,7 @@ const CartPanel = ({
         <button
           onClick={onCheckout}
           disabled={!canCheckout()}
-          className="touch-btn-success w-full disabled:opacity-50 disabled:cursor-not-allowed"
+          className="touch-btn-success w-full py-2 md:py-3 text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {serviceType === 'service' && hasActiveTables && !selectedTableId 
             ? 'Bitte Tisch wählen' 
