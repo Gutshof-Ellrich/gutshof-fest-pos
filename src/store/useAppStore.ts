@@ -149,6 +149,10 @@ interface AppState {
   // Settings
   depositPerGlass: number;
   setDepositPerGlass: (value: number) => void;
+
+  // Background Image
+  backgroundImage: string | null;
+  setBackgroundImage: (imageData: string | null) => void;
 }
 
 // Initial demo data
@@ -373,6 +377,10 @@ export const useAppStore = create<AppState>()(
       // Settings
       depositPerGlass: 2,
       setDepositPerGlass: (value) => set({ depositPerGlass: value }),
+
+      // Background Image
+      backgroundImage: null,
+      setBackgroundImage: (imageData) => set({ backgroundImage: imageData }),
     }),
     {
       name: 'gutshof-weinfest-pos',
@@ -384,6 +392,7 @@ export const useAppStore = create<AppState>()(
         tables: state.tables,
         tableTabs: state.tableTabs,
         depositPerGlass: state.depositPerGlass,
+        backgroundImage: state.backgroundImage,
       }),
     }
   )

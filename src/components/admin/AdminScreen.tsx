@@ -4,12 +4,13 @@ import { toast } from 'sonner';
 import TableManagement from './TableManagement';
 import PrinterManagement from './PrinterManagement';
 import DataSyncManagement from './DataSyncManagement';
+import BackgroundImageUpload from './BackgroundImageUpload';
 
 interface AdminScreenProps {
   onLogout: () => void;
 }
 
-type AdminTab = 'products' | 'categories' | 'tables' | 'deposit' | 'printers' | 'statistics' | 'sync';
+type AdminTab = 'products' | 'categories' | 'tables' | 'deposit' | 'printers' | 'statistics' | 'sync' | 'design';
 
 const AdminScreen = ({ onLogout }: AdminScreenProps) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('statistics');
@@ -62,6 +63,7 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
     { id: 'deposit', label: 'Pfand' },
     { id: 'printers', label: 'Drucker' },
     { id: 'sync', label: 'Synchronisation' },
+    { id: 'design', label: 'Design' },
   ];
 
   return (
@@ -561,6 +563,8 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
         {activeTab === 'printers' && <PrinterManagement />}
         
         {activeTab === 'sync' && <DataSyncManagement />}
+
+        {activeTab === 'design' && <BackgroundImageUpload />}
       </main>
     </div>
   );
