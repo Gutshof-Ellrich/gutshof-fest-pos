@@ -262,6 +262,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
               categories={filteredCategories}
               selectedCategoryId={selectedCategoryId}
               onSelectCategory={setSelectedCategoryId}
+              groupByType={role === 'combined'}
             />
           </div>
 
