@@ -25,8 +25,13 @@ const Index = () => {
     return <AdminScreen onLogout={handleLogout} />;
   }
 
-  // Bar or Food role
-  return <POSScreen role={currentRole} onLogout={handleLogout} />;
+  // Bar, Food, or Combined role
+  if (currentRole === 'bar' || currentRole === 'food' || currentRole === 'combined') {
+    return <POSScreen role={currentRole} onLogout={handleLogout} />;
+  }
+
+  // Fallback
+  return <LoginScreen onLogin={handleLogin} />;
 };
 
 export default Index;
