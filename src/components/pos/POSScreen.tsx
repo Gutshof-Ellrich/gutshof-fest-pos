@@ -104,6 +104,8 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
       return;
     }
     
+    // Close mobile cart before showing payment dialog
+    setMobileCartOpen(false);
     setShowPayment(true);
   };
 
