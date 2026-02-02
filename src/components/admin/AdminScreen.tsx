@@ -228,7 +228,7 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
                   const newCat: Category = {
                     id: `cat-${Date.now()}`,
                     name: 'Neue Kategorie',
-                    color: 'red-wine',
+                    color: '#722F37', // Default bordeaux color
                     type: 'drinks',
                     sortOrder: categories.length + 1,
                   };
@@ -244,6 +244,16 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
             <div className="grid gap-4">
               {categories.map((category) => (
                 <div key={category.id} className="bg-card rounded-xl border border-border p-4 flex items-center gap-4">
+                  {/* Color Preview & Picker */}
+                  <div className="relative">
+                    <input
+                      type="color"
+                      value={category.color.startsWith('#') ? category.color : '#722F37'}
+                      onChange={(e) => updateCategory(category.id, { color: e.target.value })}
+                      className="w-12 h-12 rounded-lg cursor-pointer border-2 border-border"
+                      title="Farbe wählen"
+                    />
+                  </div>
                   <input
                     type="text"
                     value={category.name}
@@ -258,19 +268,6 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
                     <option value="drinks">Getränke</option>
                     <option value="food">Speisen</option>
                   </select>
-                  <select
-                    value={category.color}
-                    onChange={(e) => updateCategory(category.id, { color: e.target.value })}
-                    className="px-3 py-2 rounded-lg border border-border focus:border-primary outline-none"
-                  >
-                    <option value="white-wine">Weißwein (gold)</option>
-                    <option value="red-wine">Rotwein (bordeaux)</option>
-                    <option value="juice">Saft (orange)</option>
-                    <option value="water">Wasser (blau)</option>
-                    <option value="beer">Bier (braun)</option>
-                    <option value="grill">Grill (grün)</option>
-                    <option value="sides">Beilagen (gelb)</option>
-                  </select>
                   <button
                     onClick={() => {
                       if (confirm('Kategorie und alle zugehörigen Produkte löschen?')) {
@@ -284,6 +281,37 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
                   </button>
                 </div>
               ))}
+            </div>
+
+            {/* Preset Colors */}
+            <div className="bg-card rounded-xl border border-border p-4">
+              <h3 className="font-semibold text-sm text-muted-foreground mb-3">Farbvorschläge:</h3>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { name: 'Bordeaux', color: '#722F37' },
+                  { name: 'Weißwein', color: '#D4A84B' },
+                  { name: 'Orange', color: '#E67E22' },
+                  { name: 'Blau', color: '#3498DB' },
+                  { name: 'Grün', color: '#27AE60' },
+                  { name: 'Braun', color: '#8B6914' },
+                  { name: 'Gelb', color: '#F1C40F' },
+                  { name: 'Violett', color: '#9B59B6' },
+                  { name: 'Rosa', color: '#E91E63' },
+                  { name: 'Türkis', color: '#1ABC9C' },
+                ].map((preset) => (
+                  <div
+                    key={preset.color}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-full text-xs"
+                  >
+                    <div
+                      className="w-4 h-4 rounded-full border border-border"
+                      style={{ backgroundColor: preset.color }}
+                    />
+                    <span>{preset.name}</span>
+                    <code className="text-muted-foreground">{preset.color}</code>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
