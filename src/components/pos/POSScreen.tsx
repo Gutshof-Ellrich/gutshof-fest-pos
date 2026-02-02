@@ -252,9 +252,9 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+      <main className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Left Side - Categories & Products */}
-        <div className="flex-1 overflow-y-auto p-3 md:p-6 pb-24 lg:pb-6 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-3 md:p-6 pb-24 md:pb-6 custom-scrollbar">
           {/* Categories */}
           <div className="mb-4 md:mb-6">
             <h2 className="font-display text-base md:text-lg font-semibold text-muted-foreground mb-2 md:mb-4">
@@ -283,14 +283,14 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
           </div>
         </div>
 
-        {/* Desktop Cart - Hidden on mobile */}
-        <div className="hidden lg:flex lg:w-[400px] border-l border-border p-4 flex-col">
+        {/* Desktop/Tablet Cart - Hidden on mobile */}
+        <div className="hidden md:flex md:w-[350px] lg:w-[400px] border-l border-border p-4 flex-col">
           <CartPanel {...cartPanelProps} />
         </div>
       </main>
 
       {/* Mobile Floating Cart Button */}
-      <div className="lg:hidden fixed bottom-4 right-4 z-50">
+      <div className="md:hidden fixed bottom-4 right-4 z-50">
         <Sheet open={mobileCartOpen} onOpenChange={setMobileCartOpen}>
           <SheetTrigger asChild>
             <button className="relative w-16 h-16 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors">
