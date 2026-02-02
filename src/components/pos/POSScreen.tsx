@@ -152,33 +152,33 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="bg-card border-b border-border px-6 py-4">
+      <header className="bg-card border-b border-border px-3 py-2 md:px-6 md:py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="font-display text-2xl font-bold text-foreground">
+          <div className="flex items-center gap-2 md:gap-4">
+            <h1 className="font-display text-lg md:text-2xl font-bold text-foreground">
               Gutshof Ellrich
             </h1>
-            <span className="text-muted-foreground">|</span>
-            <span className={`font-display text-xl font-semibold ${roleColor}`}>
+            <span className="text-muted-foreground hidden md:inline">|</span>
+            <span className={`font-display text-base md:text-xl font-semibold ${roleColor}`}>
               {roleTitle}
             </span>
           </div>
           <button
             onClick={onLogout}
-            className="touch-btn-secondary text-base py-2 px-4 min-h-0"
+            className="touch-btn-secondary text-sm md:text-base py-1.5 px-3 md:py-2 md:px-4 min-h-0"
           >
             HOME
           </button>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 flex overflow-hidden">
+      {/* Main Content - Stacked on mobile, side-by-side on tablet+ */}
+      <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Left Side - Categories & Products */}
-        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-3 md:p-6 custom-scrollbar">
           {/* Categories */}
-          <div className="mb-6">
-            <h2 className="font-display text-lg font-semibold text-muted-foreground mb-4">
+          <div className="mb-4 md:mb-6">
+            <h2 className="font-display text-base md:text-lg font-semibold text-muted-foreground mb-2 md:mb-4">
               Kategorien
             </h2>
             <CategoryGrid
@@ -190,7 +190,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
 
           {/* Products */}
           <div>
-            <h2 className="font-display text-lg font-semibold text-muted-foreground mb-4">
+            <h2 className="font-display text-base md:text-lg font-semibold text-muted-foreground mb-2 md:mb-4">
               {selectedCategoryId
                 ? categories.find((c) => c.id === selectedCategoryId)?.name || 'Produkte'
                 : 'Produkte'}
@@ -203,8 +203,8 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
           </div>
         </div>
 
-        {/* Right Side - Cart */}
-        <div className="w-[400px] border-l border-border p-4 flex flex-col">
+        {/* Right Side - Cart (full width on mobile, fixed width on tablet+) */}
+        <div className="lg:w-[400px] border-t lg:border-t-0 lg:border-l border-border p-2 md:p-4 flex flex-col max-h-[50vh] lg:max-h-none">
           <CartPanel
             items={cart}
             deposit={deposit}
