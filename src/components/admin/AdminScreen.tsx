@@ -342,59 +342,219 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
               </button>
             </div>
 
-            <div className="grid gap-4">
-              {products.map((product) => (
-                <div key={product.id} className="bg-card rounded-xl border border-border p-4 flex items-center gap-4">
-                  <input
-                    type="text"
-                    value={product.name}
-                    onChange={(e) => updateProduct(product.id, { name: e.target.value })}
-                    className="flex-1 px-3 py-2 rounded-lg border border-border focus:border-primary outline-none"
-                    placeholder="Produktname"
-                  />
-                  <div className="flex items-center gap-1">
-                    <input
-                      type="number"
-                      value={product.price}
-                      onChange={(e) => updateProduct(product.id, { price: parseFloat(e.target.value) || 0 })}
-                      step="0.50"
-                      min="0"
-                      className="w-24 px-3 py-2 rounded-lg border border-border focus:border-primary outline-none text-right"
-                    />
-                    <span className="text-muted-foreground">€</span>
+            {/* Drinks Products */}
+            {(() => {
+              const drinkCategories = categories.filter(c => c.type === 'drinks');
+              const drinkProducts = products.filter(p => 
+                drinkCategories.some(c => c.id === p.categoryId)
+              );
+              
+              if (drinkProducts.length === 0) return null;
+              
+              return (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-primary" />
+                    <h3 className="text-lg font-semibold text-primary uppercase tracking-wide">
+                      Getränke ({drinkProducts.length})
+                    </h3>
+                    <div className="flex-1 h-px bg-primary/20" />
                   </div>
-                  <select
-                    value={product.categoryId}
-                    onChange={(e) => updateProduct(product.id, { categoryId: e.target.value })}
-                    className="px-3 py-2 rounded-lg border border-border focus:border-primary outline-none"
-                  >
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  <div className="grid gap-3">
+                    {drinkProducts.map((product) => (
+                      <div key={product.id} className="bg-card rounded-xl border border-border p-4 flex items-center gap-4">
+                        <input
+                          type="text"
+                          value={product.name}
+                          onChange={(e) => updateProduct(product.id, { name: e.target.value })}
+                          className="flex-1 px-3 py-2 rounded-lg border border-border focus:border-primary outline-none"
+                          placeholder="Produktname"
+                        />
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            value={product.price}
+                            onChange={(e) => updateProduct(product.id, { price: parseFloat(e.target.value) || 0 })}
+                            step="0.50"
+                            min="0"
+                            className="w-24 px-3 py-2 rounded-lg border border-border focus:border-primary outline-none text-right"
+                          />
+                          <span className="text-muted-foreground">€</span>
+                        </div>
+                        <select
+                          value={product.categoryId}
+                          onChange={(e) => updateProduct(product.id, { categoryId: e.target.value })}
+                          className="px-3 py-2 rounded-lg border border-border focus:border-primary outline-none"
+                        >
+                          {categories.map((cat) => (
+                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                          ))}
+                        </select>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={product.hasDeposit || false}
+                            onChange={(e) => updateProduct(product.id, { hasDeposit: e.target.checked })}
+                            className="w-5 h-5 rounded border-border accent-primary"
+                          />
+                          <span className="text-sm text-muted-foreground whitespace-nowrap">Pfand</span>
+                        </label>
+                        <button
+                          onClick={() => {
+                            if (confirm('Produkt löschen?')) {
+                              deleteProduct(product.id);
+                              toast.success('Produkt gelöscht');
+                            }
+                          }}
+                          className="px-4 py-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                        >
+                          Löschen
+                        </button>
+                      </div>
                     ))}
-                  </select>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={product.hasDeposit || false}
-                      onChange={(e) => updateProduct(product.id, { hasDeposit: e.target.checked })}
-                      className="w-5 h-5 rounded border-border accent-primary"
-                    />
-                    <span className="text-sm text-muted-foreground whitespace-nowrap">🍷 Pfand</span>
-                  </label>
-                  <button
-                    onClick={() => {
-                      if (confirm('Produkt löschen?')) {
-                        deleteProduct(product.id);
-                        toast.success('Produkt gelöscht');
-                      }
-                    }}
-                    className="px-4 py-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                  >
-                    Löschen
-                  </button>
+                  </div>
                 </div>
-              ))}
-            </div>
+              );
+            })()}
+
+            {/* Food Products */}
+            {(() => {
+              const foodCategories = categories.filter(c => c.type === 'food');
+              const foodProducts = products.filter(p => 
+                foodCategories.some(c => c.id === p.categoryId)
+              );
+              
+              if (foodProducts.length === 0) return null;
+              
+              return (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-success" />
+                    <h3 className="text-lg font-semibold text-success uppercase tracking-wide">
+                      Speisen ({foodProducts.length})
+                    </h3>
+                    <div className="flex-1 h-px bg-success/20" />
+                  </div>
+                  <div className="grid gap-3">
+                    {foodProducts.map((product) => (
+                      <div key={product.id} className="bg-card rounded-xl border border-border p-4 flex items-center gap-4">
+                        <input
+                          type="text"
+                          value={product.name}
+                          onChange={(e) => updateProduct(product.id, { name: e.target.value })}
+                          className="flex-1 px-3 py-2 rounded-lg border border-border focus:border-primary outline-none"
+                          placeholder="Produktname"
+                        />
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            value={product.price}
+                            onChange={(e) => updateProduct(product.id, { price: parseFloat(e.target.value) || 0 })}
+                            step="0.50"
+                            min="0"
+                            className="w-24 px-3 py-2 rounded-lg border border-border focus:border-primary outline-none text-right"
+                          />
+                          <span className="text-muted-foreground">€</span>
+                        </div>
+                        <select
+                          value={product.categoryId}
+                          onChange={(e) => updateProduct(product.id, { categoryId: e.target.value })}
+                          className="px-3 py-2 rounded-lg border border-border focus:border-primary outline-none"
+                        >
+                          {categories.map((cat) => (
+                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => {
+                            if (confirm('Produkt löschen?')) {
+                              deleteProduct(product.id);
+                              toast.success('Produkt gelöscht');
+                            }
+                          }}
+                          className="px-4 py-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                        >
+                          Löschen
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Uncategorized Products */}
+            {(() => {
+              const uncategorizedProducts = products.filter(p => 
+                !categories.some(c => c.id === p.categoryId)
+              );
+              
+              if (uncategorizedProducts.length === 0) return null;
+              
+              return (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-muted-foreground" />
+                    <h3 className="text-lg font-semibold text-muted-foreground uppercase tracking-wide">
+                      Ohne Kategorie ({uncategorizedProducts.length})
+                    </h3>
+                    <div className="flex-1 h-px bg-muted-foreground/20" />
+                  </div>
+                  <div className="grid gap-3">
+                    {uncategorizedProducts.map((product) => (
+                      <div key={product.id} className="bg-card rounded-xl border border-destructive/30 p-4 flex items-center gap-4">
+                        <input
+                          type="text"
+                          value={product.name}
+                          onChange={(e) => updateProduct(product.id, { name: e.target.value })}
+                          className="flex-1 px-3 py-2 rounded-lg border border-border focus:border-primary outline-none"
+                          placeholder="Produktname"
+                        />
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            value={product.price}
+                            onChange={(e) => updateProduct(product.id, { price: parseFloat(e.target.value) || 0 })}
+                            step="0.50"
+                            min="0"
+                            className="w-24 px-3 py-2 rounded-lg border border-border focus:border-primary outline-none text-right"
+                          />
+                          <span className="text-muted-foreground">€</span>
+                        </div>
+                        <select
+                          value={product.categoryId}
+                          onChange={(e) => updateProduct(product.id, { categoryId: e.target.value })}
+                          className="px-3 py-2 rounded-lg border border-border focus:border-primary outline-none"
+                        >
+                          <option value="">-- Kategorie wählen --</option>
+                          {categories.map((cat) => (
+                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => {
+                            if (confirm('Produkt löschen?')) {
+                              deleteProduct(product.id);
+                              toast.success('Produkt gelöscht');
+                            }
+                          }}
+                          className="px-4 py-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                        >
+                          Löschen
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {products.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="text-lg">Noch keine Produkte angelegt</p>
+                <p className="text-sm mt-1">Klicken Sie auf "+ Produkt hinzufügen" um zu beginnen.</p>
+              </div>
+            )}
           </div>
         )}
 
