@@ -189,12 +189,12 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
   // Count open tables for badge
   const openTablesCount = tableTabs.length;
   
-  // Count completed orders today for badge
+  // Count completed orders today for this role
   const todayOrdersCount = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return orders.filter(o => o.isPaid && new Date(o.timestamp) >= today).length;
-  }, [orders]);
+    return orders.filter(o => o.isPaid && o.role === role && new Date(o.timestamp) >= today).length;
+  }, [orders, role]);
 
   // Calculate total items in cart for badge
   const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -364,6 +364,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
       <OrderHistoryDialog
         isOpen={showOrderHistory}
         onClose={() => setShowOrderHistory(false)}
+        role={role}
       />
     </div>
   );

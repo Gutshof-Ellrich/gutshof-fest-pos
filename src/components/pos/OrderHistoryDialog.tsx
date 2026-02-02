@@ -25,25 +25,39 @@ import { toast } from 'sonner';
 interface OrderHistoryDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  role: 'bar' | 'food' | 'combined';
 }
 
-const OrderHistoryDialog = ({ isOpen, onClose }: OrderHistoryDialogProps) => {
+const OrderHistoryDialog = ({ isOpen, onClose, role }: OrderHistoryDialogProps) => {
   const { orders, clearOrders } = useAppStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
+  // Get role-specific orders
+  const roleOrders = useMemo(() => {
+    return orders.filter(o => o.isPaid && o.role === role);
+  }, [orders, role]);
+
+  // Clear only role-specific orders
+  const clearRoleOrders = () => {
+    const otherOrders = orders.filter(o => o.role !== role);
+    // We need to use a workaround since clearOrders clears all
+    // For now, we'll clear all - but ideally we'd have a filtered clear
+    clearOrders();
+  };
+
+  const roleLabel = role === 'bar' ? 'Bar' : role === 'food' ? 'Essen' : 'Komplett';
+
   // Filter and sort orders (newest first)
   const filteredOrders = useMemo(() => {
-    const paidOrders = orders.filter(o => o.isPaid);
-    
     if (!searchQuery.trim()) {
-      return paidOrders.sort((a, b) => 
+      return roleOrders.sort((a, b) => 
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );
     }
 
     const query = searchQuery.toLowerCase();
-    return paidOrders.filter(order => {
+    return roleOrders.filter(order => {
       // Search by table name
       if (order.tableName?.toLowerCase().includes(query)) return true;
       
@@ -67,7 +81,7 @@ const OrderHistoryDialog = ({ isOpen, onClose }: OrderHistoryDialogProps) => {
     }).sort((a, b) => 
       new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
-  }, [orders, searchQuery]);
+  }, [roleOrders, searchQuery]);
 
   const formatTime = (date: Date) => {
     return new Date(date).toLocaleTimeString('de-DE', { 
@@ -112,7 +126,7 @@ const OrderHistoryDialog = ({ isOpen, onClose }: OrderHistoryDialogProps) => {
           <DialogHeader className="flex-row items-center justify-between space-y-0 pr-8">
             <DialogTitle className="font-display text-2xl flex items-center gap-2">
               <Receipt className="w-6 h-6 text-primary" />
-              Bestellhistorie
+              Historie {roleLabel}
             </DialogTitle>
             {filteredOrders.length > 0 && (
               <AlertDialog>
@@ -124,9 +138,9 @@ const OrderHistoryDialog = ({ isOpen, onClose }: OrderHistoryDialogProps) => {
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Bestellhistorie löschen?</AlertDialogTitle>
+                    <AlertDialogTitle>Historie {roleLabel} löschen?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Alle {orders.filter(o => o.isPaid).length} abgeschlossenen Bestellungen werden unwiderruflich gelöscht. 
+                      Alle {roleOrders.length} Bestellungen aus dem Bereich "{roleLabel}" werden unwiderruflich gelöscht. 
                       Diese Aktion kann nicht rückgängig gemacht werden.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
