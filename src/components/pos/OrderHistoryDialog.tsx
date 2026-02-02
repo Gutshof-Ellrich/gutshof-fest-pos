@@ -29,9 +29,10 @@ interface OrderHistoryDialogProps {
 }
 
 const OrderHistoryDialog = ({ isOpen, onClose, role }: OrderHistoryDialogProps) => {
-  const { orders, clearOrders } = useAppStore();
+  const { orders, clearOrders, deleteOrder } = useAppStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
 
   // Get role-specific orders
   const roleOrders = useMemo(() => {
@@ -192,50 +193,64 @@ const OrderHistoryDialog = ({ isOpen, onClose, role }: OrderHistoryDialogProps) 
                     </h3>
                     <div className="space-y-2">
                       {dateOrders.map((order) => (
-                        <button
+                        <div
                           key={order.id}
-                          onClick={() => setSelectedOrder(order)}
-                          className="w-full bg-muted/50 hover:bg-muted rounded-xl p-3 text-left transition-colors"
+                          className="w-full bg-muted/50 hover:bg-muted rounded-xl p-3 text-left transition-colors flex items-start gap-2"
                         >
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono text-sm text-muted-foreground">
-                                {getOrderNumber(order)}
-                              </span>
-                              <span className="text-sm font-medium flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {formatTime(new Date(order.timestamp))}
-                              </span>
-                              {order.tableName && (
-                                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                                  Tisch {order.tableName}
+                          <button
+                            onClick={() => setSelectedOrder(order)}
+                            className="flex-1 text-left"
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-mono text-sm text-muted-foreground">
+                                  {getOrderNumber(order)}
                                 </span>
-                              )}
-                              <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                order.serviceType === 'togo' 
-                                  ? 'bg-amber-100 text-amber-800' 
-                                  : 'bg-blue-100 text-blue-800'
-                              }`}>
-                                {order.serviceType === 'togo' ? 'TO GO' : 'SERVICE'}
-                              </span>
+                                <span className="text-sm font-medium flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {formatTime(new Date(order.timestamp))}
+                                </span>
+                                {order.tableName && (
+                                  <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                    Tisch {order.tableName}
+                                  </span>
+                                )}
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                  order.serviceType === 'togo' 
+                                    ? 'bg-amber-100 text-amber-800' 
+                                    : 'bg-blue-100 text-blue-800'
+                                }`}>
+                                  {order.serviceType === 'togo' ? 'TO GO' : 'SERVICE'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {order.paymentMethod === 'cash' ? (
+                                  <Banknote className="w-4 h-4 text-success" />
+                                ) : (
+                                  <CreditCard className="w-4 h-4 text-blue-500" />
+                                )}
+                                <span className="font-bold">
+                                  {order.grandTotal.toFixed(2).replace('.', ',')} €
+                                </span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              {order.paymentMethod === 'cash' ? (
-                                <Banknote className="w-4 h-4 text-success" />
-                              ) : (
-                                <CreditCard className="w-4 h-4 text-blue-500" />
-                              )}
-                              <span className="font-bold">
-                                {order.grandTotal.toFixed(2).replace('.', ',')} €
-                              </span>
+                            <div className="text-sm text-muted-foreground truncate">
+                              {order.items.map(item => 
+                                `${item.quantity}× ${item.product.name}`
+                              ).join(', ')}
                             </div>
-                          </div>
-                          <div className="text-sm text-muted-foreground truncate">
-                            {order.items.map(item => 
-                              `${item.quantity}× ${item.product.name}`
-                            ).join(', ')}
-                          </div>
-                        </button>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOrderToDelete(order);
+                            }}
+                            className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors shrink-0"
+                            title="Bestellung löschen"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -356,6 +371,38 @@ const OrderHistoryDialog = ({ isOpen, onClose, role }: OrderHistoryDialogProps) 
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!orderToDelete} onOpenChange={(open) => !open && setOrderToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Bestellung löschen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {orderToDelete && (
+                <>
+                  Bestellung {getOrderNumber(orderToDelete)} vom {formatTime(new Date(orderToDelete.timestamp))} Uhr 
+                  ({orderToDelete.grandTotal.toFixed(2).replace('.', ',')} €) wird unwiderruflich gelöscht.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (orderToDelete) {
+                  deleteOrder(orderToDelete.id);
+                  toast.success('Bestellung wurde gelöscht');
+                  setOrderToDelete(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Löschen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
