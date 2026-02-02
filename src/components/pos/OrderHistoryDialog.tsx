@@ -1,14 +1,26 @@
 import { useState, useMemo } from 'react';
 import { useAppStore, Order } from '@/store/useAppStore';
-import { Clock, Search, Receipt, X, Banknote, CreditCard } from 'lucide-react';
+import { Clock, Search, Receipt, Banknote, CreditCard, Trash2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { toast } from 'sonner';
 
 interface OrderHistoryDialogProps {
   isOpen: boolean;
@@ -16,7 +28,7 @@ interface OrderHistoryDialogProps {
 }
 
 const OrderHistoryDialog = ({ isOpen, onClose }: OrderHistoryDialogProps) => {
-  const { orders } = useAppStore();
+  const { orders, clearOrders } = useAppStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
@@ -97,11 +109,42 @@ const OrderHistoryDialog = ({ isOpen, onClose }: OrderHistoryDialogProps) => {
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
-          <DialogHeader>
+          <DialogHeader className="flex-row items-center justify-between space-y-0 pr-8">
             <DialogTitle className="font-display text-2xl flex items-center gap-2">
               <Receipt className="w-6 h-6 text-primary" />
               Bestellhistorie
             </DialogTitle>
+            {filteredOrders.length > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button className="text-sm text-destructive hover:text-destructive/80 flex items-center gap-1 transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                    Reset
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Bestellhistorie löschen?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Alle {orders.filter(o => o.isPaid).length} abgeschlossenen Bestellungen werden unwiderruflich gelöscht. 
+                      Diese Aktion kann nicht rückgängig gemacht werden.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        clearOrders();
+                        toast.success('Bestellhistorie wurde gelöscht');
+                      }}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Alle löschen
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </DialogHeader>
 
           {/* Search */}
