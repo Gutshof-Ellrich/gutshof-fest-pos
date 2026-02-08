@@ -1,10 +1,20 @@
 import { toast } from 'sonner';
 import { Order, CartItem, DepositInfo } from '@/store/useAppStore';
 
-// Fixed print server configuration
-const PRINT_SERVER_URL = 'http://192.168.188.200:3001';
+// Print server configuration
+// Default: HTTPS proxy (Caddy) that forwards to http://192.168.188.200:3001
+let PRINT_SERVER_URL = 'https://192.168.188.200:3443';
 const PRINTER_NAME = 'kueche';
 const RECEIPT_WIDTH = 48;
+
+/**
+ * Configure the print server URL at runtime.
+ * Called from the store on app init to restore the persisted URL.
+ */
+export function configurePrintServer(url: string) {
+  PRINT_SERVER_URL = url.replace(/\/+$/, ''); // strip trailing slashes
+  console.log('[PrintService] Server-URL konfiguriert:', PRINT_SERVER_URL);
+}
 
 /**
  * Sanitize text: replace umlauts, special chars with ASCII equivalents.

@@ -4,16 +4,17 @@ import {
   checkPrintServer,
   printTestPage,
   printDailySummaryReceipt,
-  getPrintServerUrl,
   getPrinterName,
 } from '@/services/printService';
 import { toast } from 'sonner';
-import { Printer as PrinterIcon, Wifi, WifiOff, TestTube, RefreshCw } from 'lucide-react';
+import { Printer as PrinterIcon, Wifi, WifiOff, TestTube, RefreshCw, Settings } from 'lucide-react';
 
 const PrinterManagement = () => {
-  const { orders } = useAppStore();
+  const { orders, printServerUrl, setPrintServerUrl } = useAppStore();
   const [serverOnline, setServerOnline] = useState<boolean | null>(null);
   const [checking, setChecking] = useState(false);
+  const [urlInput, setUrlInput] = useState(printServerUrl);
+  const [editingUrl, setEditingUrl] = useState(false);
 
   const checkServer = async () => {
     setChecking(true);
@@ -25,6 +26,10 @@ const PrinterManagement = () => {
   useEffect(() => {
     checkServer();
   }, []);
+
+  useEffect(() => {
+    setUrlInput(printServerUrl);
+  }, [printServerUrl]);
 
   const handleTestPrint = async () => {
     toast.info('Testdruck wird gesendet...');
@@ -42,6 +47,19 @@ const PrinterManagement = () => {
     }
   };
 
+  const handleSaveUrl = () => {
+    const trimmed = urlInput.trim().replace(/\/+$/, '');
+    if (!trimmed) {
+      toast.error('URL darf nicht leer sein');
+      return;
+    }
+    setPrintServerUrl(trimmed);
+    setEditingUrl(false);
+    toast.success('Print-Server URL gespeichert');
+    // Re-check server with new URL
+    setTimeout(checkServer, 500);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
@@ -55,6 +73,41 @@ const PrinterManagement = () => {
           <RefreshCw className={`w-4 h-4 ${checking ? 'animate-spin' : ''}`} />
           Status pruefen
         </button>
+      </div>
+
+      {/* Print Server URL Configuration */}
+      <div className="bg-card rounded-xl border-2 border-border p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <Settings className="w-5 h-5 text-muted-foreground" />
+          <h3 className="font-semibold text-lg">Print-Server (HTTPS Proxy)</h3>
+        </div>
+        {editingUrl ? (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={urlInput}
+              onChange={(e) => setUrlInput(e.target.value)}
+              placeholder="https://192.168.188.200:3443"
+              className="flex-1 px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm font-mono"
+            />
+            <button onClick={handleSaveUrl} className="touch-btn-primary text-sm px-4">
+              Speichern
+            </button>
+            <button
+              onClick={() => { setUrlInput(printServerUrl); setEditingUrl(false); }}
+              className="touch-btn-secondary text-sm px-4"
+            >
+              Abbrechen
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between">
+            <code className="text-sm bg-muted px-3 py-1.5 rounded-lg font-mono">{printServerUrl}</code>
+            <button onClick={() => setEditingUrl(true)} className="touch-btn-secondary text-sm">
+              Aendern
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Print Server Status */}
@@ -93,7 +146,7 @@ const PrinterManagement = () => {
                   ? 'text-green-700'
                   : 'text-red-700'
             }`}>
-              Server: {getPrintServerUrl()}
+              Health-Check: {printServerUrl}/health
             </p>
           </div>
         </div>
@@ -144,10 +197,21 @@ const PrinterManagement = () => {
         <p className="font-medium text-foreground mb-2">Hinweise:</p>
         <ul className="list-disc list-inside space-y-1">
           <li>Der Drucker "{getPrinterName()}" ist fest hinterlegt.</li>
-          <li>Der Druck erfolgt ueber den Print-Server unter {getPrintServerUrl()}.</li>
+          <li>Der Druck erfolgt ueber einen HTTPS-Proxy, der an den Print-Server weiterleitet.</li>
           <li>Bons werden automatisch nach Bezahlung gedruckt.</li>
           <li>In Artikelnamen und Bontexten duerfen keine Umlaute oder Sonderzeichen verwendet werden.</li>
         </ul>
+
+        <p className="font-medium text-foreground mt-4 mb-2">Caddy Proxy einrichten (auf dem Print-Server-Rechner):</p>
+        <div className="bg-background rounded-lg p-3 font-mono text-xs whitespace-pre-wrap border border-border">
+{`:3443 {
+  reverse_proxy 192.168.188.200:3001
+  tls internal
+}`}
+        </div>
+        <p className="mt-2">
+          Dann Caddy starten: <code className="bg-background px-1.5 py-0.5 rounded border border-border">caddy run --config Caddyfile</code>
+        </p>
       </div>
     </div>
   );

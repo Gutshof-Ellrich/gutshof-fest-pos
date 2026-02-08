@@ -85,6 +85,10 @@ interface AppState {
   setRole: (role: UserRole) => void;
   logout: () => void;
 
+  // Print Server
+  printServerUrl: string;
+  setPrintServerUrl: (url: string) => void;
+
   // Categories & Products
   categories: Category[];
   products: Product[];
@@ -209,6 +213,16 @@ export const useAppStore = create<AppState>()(
       currentRole: null,
       setRole: (role) => set({ currentRole: role }),
       logout: () => set({ currentRole: null, cart: [], deposit: { newDeposits: 0, returnedDeposits: 0, depositValue: 2 }, serviceType: 'service' }),
+
+      // Print Server
+      printServerUrl: 'https://192.168.188.200:3443',
+      setPrintServerUrl: (url) => {
+        set({ printServerUrl: url });
+        // Dynamically update the print service module
+        import('@/services/printService').then(({ configurePrintServer }) => {
+          configurePrintServer(url);
+        });
+      },
 
       // Categories & Products
       categories: initialCategories,
@@ -397,7 +411,16 @@ export const useAppStore = create<AppState>()(
         tableTabs: state.tableTabs,
         depositPerGlass: state.depositPerGlass,
         backgroundImage: state.backgroundImage,
+        printServerUrl: state.printServerUrl,
       }),
+      onRehydrateStorage: () => (state) => {
+        // Sync persisted printServerUrl to the printService module on app load
+        if (state?.printServerUrl) {
+          import('@/services/printService').then(({ configurePrintServer }) => {
+            configurePrintServer(state.printServerUrl);
+          });
+        }
+      },
     }
   )
 );
