@@ -145,14 +145,14 @@ export class ReceiptBuilder {
         builder.addSeparator();
         builder.addLine(ESCPOS.BOLD_ON + 'Pfand:' + ESCPOS.BOLD_OFF);
         if (order.deposit.newDeposits > 0) {
-          builder.addFormattedLine(
-            `  Neu: ${order.deposit.newDeposits} Gläser`,
+        builder.addFormattedLine(
+            `  Neu: ${order.deposit.newDeposits} Glaeser`,
             formatCurrency(order.deposit.newDeposits * order.deposit.depositValue)
           );
         }
         if (order.deposit.returnedDeposits > 0) {
           builder.addFormattedLine(
-            `  Zurück: ${order.deposit.returnedDeposits} Gläser`,
+            `  Zurueck: ${order.deposit.returnedDeposits} Glaeser`,
             '-' + formatCurrency(order.deposit.returnedDeposits * order.deposit.depositValue)
           );
         }
@@ -174,7 +174,7 @@ export class ReceiptBuilder {
       builder.addFormattedLine('Zahlungsart:', order.paymentMethod === 'cash' ? 'Bar' : 'Karte');
       if (order.paymentMethod === 'cash' && order.amountPaid) {
         builder.addFormattedLine('Gegeben:', formatCurrency(order.amountPaid));
-        builder.addFormattedLine('Rückgeld:', formatCurrency(order.change || 0));
+        builder.addFormattedLine('Rueckgeld:', formatCurrency(order.change || 0));
       }
     }
     
@@ -183,7 +183,7 @@ export class ReceiptBuilder {
       builder.addEmptyLines(1);
       builder.addCenteredText('Vielen Dank!');
       builder.addCenteredText('Wir freuen uns auf Ihren');
-      builder.addCenteredText('nächsten Besuch!');
+      builder.addCenteredText('naechsten Besuch!');
     }
     
     builder.addEmptyLines(3);
@@ -205,7 +205,7 @@ export class ReceiptBuilder {
     builder.addFormattedLine('Zeit:', now.toLocaleTimeString('de-DE'));
     builder.addSeparator();
     builder.addLine('Zeichentest:');
-    builder.addLine('ÄÖÜ äöü ß € @ # &');
+    builder.addLine('AeOeUe aeoeue ss EUR @ # &');
     builder.addLine('0123456789');
     builder.addSeparator();
     builder.addCenteredText('Druck erfolgreich!');
@@ -235,7 +235,7 @@ export class ReceiptBuilder {
     builder.addCenteredText(date.toLocaleDateString('de-DE'));
     builder.addSeparator('=');
     
-    builder.addLine(ESCPOS.BOLD_ON + 'ÜBERSICHT' + ESCPOS.BOLD_OFF);
+    builder.addLine(ESCPOS.BOLD_ON + 'UEBERSICHT' + ESCPOS.BOLD_OFF);
     builder.addFormattedLine('Anzahl Bestellungen:', totalOrders.toString());
     builder.addFormattedLine('Gesamtumsatz:', formatCurrency(totalRevenue));
     builder.addSeparator();
