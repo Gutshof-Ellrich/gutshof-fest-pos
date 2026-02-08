@@ -21,7 +21,6 @@ export interface Category {
   name: string;
   color: string;
   type: 'drinks' | 'food';
-  printerId?: string;
   sortOrder: number;
 }
 
@@ -63,6 +62,7 @@ export interface TableTab {
   updatedAt: Date;
 }
 
+// Printer type kept for backward compatibility with persisted data
 export interface Printer {
   id: string;
   name: string;

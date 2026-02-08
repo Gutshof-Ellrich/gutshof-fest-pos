@@ -6,7 +6,7 @@ import CartPanel from './CartPanel';
 import PaymentDialog from './PaymentDialog';
 import OpenTablesPanel from './OpenTablesPanel';
 import OrderHistoryDialog from './OrderHistoryDialog';
-import { printService } from '@/services/escpos';
+import { printOrderReceipt } from '@/services/printService';
 import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ShoppingCart, Clock, Receipt } from 'lucide-react';
@@ -45,7 +45,6 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     depositPerGlass,
     tables,
     tableTabs,
-    printers,
     orders,
     addToCart,
     removeFromCart,
@@ -142,18 +141,9 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
       addToTableTab(selectedTableId, selectedTableName, order);
     }
     
-    // Trigger print to appropriate printers
-    const activePrinters = printers.filter(p => p.isActive);
-    if (activePrinters.length > 0 && order.items.length > 0) {
-      const printResult = await printService.printOrder(order, printers, categories, {
-        printCustomerReceipt: payNow, // Only print customer receipt if paying now
-      });
-      
-      if (!printResult.success && printResult.errors.length > 0) {
-        toast.warning('Druckproblem', {
-          description: printResult.errors.join(', '),
-        });
-      }
+    // Print receipt via print server
+    if (payNow && order.items.length > 0) {
+      printOrderReceipt(order);
     }
     
     clearCart();

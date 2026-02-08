@@ -1,138 +1,44 @@
 import { useState, useEffect } from 'react';
-import { useAppStore, Printer, Category } from '@/store/useAppStore';
-import { printService, printQueue, PrintQueueState } from '@/services/escpos';
-import { toast } from 'sonner';
-import { Printer as PrinterIcon, Wifi, WifiOff, Settings2, TestTube, Trash2, Plus, RefreshCw, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
+import { useAppStore } from '@/store/useAppStore';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
+  checkPrintServer,
+  printTestPage,
+  printDailySummaryReceipt,
+  getPrintServerUrl,
+  getPrinterName,
+} from '@/services/printService';
+import { toast } from 'sonner';
+import { Printer as PrinterIcon, Wifi, WifiOff, TestTube, RefreshCw } from 'lucide-react';
 
 const PrinterManagement = () => {
-  const {
-    printers,
-    categories,
-    addPrinter,
-    updatePrinter,
-    deletePrinter,
-    updateCategory,
-    orders,
-  } = useAppStore();
+  const { orders } = useAppStore();
+  const [serverOnline, setServerOnline] = useState<boolean | null>(null);
+  const [checking, setChecking] = useState(false);
 
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [showCategoryDialog, setShowCategoryDialog] = useState(false);
-  const [showServerDialog, setShowServerDialog] = useState(false);
-  const [selectedPrinter, setSelectedPrinter] = useState<Printer | null>(null);
-  const [queueState, setQueueState] = useState<PrintQueueState>({ jobs: [], isProcessing: false });
-  const [printServerUrl, setPrintServerUrl] = useState(printQueue.getPrintServerUrl() || '');
+  const checkServer = async () => {
+    setChecking(true);
+    const online = await checkPrintServer();
+    setServerOnline(online);
+    setChecking(false);
+  };
 
-  // New printer form state
-  const [newPrinter, setNewPrinter] = useState({
-    name: '',
-    ipAddress: '',
-    port: 9100,
-  });
-
-  // Subscribe to print queue updates
   useEffect(() => {
-    const unsubscribe = printQueue.subscribe(setQueueState);
-    return unsubscribe;
+    checkServer();
   }, []);
 
-  const handleAddPrinter = () => {
-    if (!newPrinter.name.trim() || !newPrinter.ipAddress.trim()) {
-      toast.error('Name und IP-Adresse sind erforderlich');
-      return;
+  const handleTestPrint = async () => {
+    toast.info('Testdruck wird gesendet...');
+    const success = await printTestPage();
+    if (success) {
+      toast.success('Testdruck erfolgreich gesendet');
     }
-
-    const printer: Printer = {
-      id: `printer-${Date.now()}`,
-      name: newPrinter.name.trim(),
-      ipAddress: newPrinter.ipAddress.trim(),
-      port: newPrinter.port || 9100,
-      isDefault: printers.length === 0,
-      isActive: true,
-    };
-
-    addPrinter(printer);
-    setShowAddDialog(false);
-    setNewPrinter({ name: '', ipAddress: '', port: 9100 });
-    toast.success(`Drucker "${printer.name}" hinzugefügt`);
-  };
-
-  const handleEditPrinter = () => {
-    if (!selectedPrinter) return;
-    updatePrinter(selectedPrinter.id, selectedPrinter);
-    setShowEditDialog(false);
-    toast.success(`Drucker "${selectedPrinter.name}" aktualisiert`);
-  };
-
-  const handleDeletePrinter = (printer: Printer) => {
-    if (!confirm(`Drucker "${printer.name}" wirklich löschen?`)) return;
-    
-    // Remove printer assignments from categories
-    categories.forEach(cat => {
-      if (cat.printerId === printer.id) {
-        updateCategory(cat.id, { printerId: undefined });
-      }
-    });
-    
-    deletePrinter(printer.id);
-    toast.success(`Drucker "${printer.name}" gelöscht`);
-  };
-
-  const handleTestPrint = async (printer: Printer) => {
-    toast.info(`Testdruck an ${printer.name} wird gesendet...`);
-    await printService.printTest(printer);
   };
 
   const handlePrintDailySummary = async () => {
-    const defaultPrinter = printers.find(p => p.isDefault && p.isActive) || printers.find(p => p.isActive);
-    if (!defaultPrinter) {
-      toast.error('Kein aktiver Drucker verfügbar');
-      return;
-    }
     toast.info('Tagesabschluss wird gedruckt...');
-    await printService.printDailySummary(orders, defaultPrinter);
-  };
-
-  const handleSetDefault = (printer: Printer) => {
-    printers.forEach(p => {
-      if (p.isDefault && p.id !== printer.id) {
-        updatePrinter(p.id, { isDefault: false });
-      }
-    });
-    updatePrinter(printer.id, { isDefault: true });
-    toast.success(`"${printer.name}" ist jetzt Standarddrucker`);
-  };
-
-  const handleSavePrintServer = () => {
-    const url = printServerUrl.trim();
-    printQueue.setPrintServerUrl(url || null);
-    setShowServerDialog(false);
-    toast.success(url ? 'Print-Server URL gespeichert' : 'Print-Server URL entfernt (Simulation aktiv)');
-  };
-
-  const handleCategoryAssignment = (categoryId: string, printerId: string | null) => {
-    updateCategory(categoryId, { printerId: printerId || undefined });
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'success': return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'failed': return <XCircle className="w-4 h-4 text-red-600" />;
-      case 'printing': return <RefreshCw className="w-4 h-4 text-blue-600 animate-spin" />;
-      case 'retrying': return <AlertCircle className="w-4 h-4 text-amber-600" />;
-      default: return <Clock className="w-4 h-4 text-muted-foreground" />;
+    const success = await printDailySummaryReceipt(orders);
+    if (success) {
+      toast.success('Tagesabschluss erfolgreich gedruckt');
     }
   };
 
@@ -141,460 +47,108 @@ const PrinterManagement = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="font-display text-2xl font-bold text-foreground">Drucker-Verwaltung</h2>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowServerDialog(true)}
-            className="touch-btn-secondary flex items-center gap-2"
-          >
-            <Settings2 className="w-4 h-4" />
-            Server-Einstellungen
-          </button>
-          <button
-            onClick={() => setShowAddDialog(true)}
-            className="touch-btn-primary flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Drucker hinzufügen
-          </button>
-        </div>
+        <button
+          onClick={checkServer}
+          disabled={checking}
+          className="touch-btn-secondary flex items-center gap-2"
+        >
+          <RefreshCw className={`w-4 h-4 ${checking ? 'animate-spin' : ''}`} />
+          Status pruefen
+        </button>
       </div>
 
       {/* Print Server Status */}
-      <div className={`rounded-xl border-2 p-4 ${printQueue.getPrintServerUrl() ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
+      <div className={`rounded-xl border-2 p-4 ${
+        serverOnline === null
+          ? 'bg-muted border-border'
+          : serverOnline
+            ? 'bg-green-50 border-green-200'
+            : 'bg-red-50 border-red-200'
+      }`}>
         <div className="flex items-center gap-3">
-          {printQueue.getPrintServerUrl() ? (
+          {serverOnline ? (
             <Wifi className="w-5 h-5 text-green-600" />
           ) : (
-            <WifiOff className="w-5 h-5 text-amber-600" />
+            <WifiOff className={`w-5 h-5 ${serverOnline === null ? 'text-muted-foreground' : 'text-red-600'}`} />
           )}
           <div className="flex-1">
-            <h3 className={`font-semibold ${printQueue.getPrintServerUrl() ? 'text-green-800' : 'text-amber-800'}`}>
-              {printQueue.getPrintServerUrl() ? 'Print-Server verbunden' : 'Simulationsmodus'}
-            </h3>
-            <p className={`text-sm ${printQueue.getPrintServerUrl() ? 'text-green-700' : 'text-amber-700'}`}>
-              {printQueue.getPrintServerUrl() 
-                ? `Server: ${printQueue.getPrintServerUrl()}`
-                : 'Druckaufträge werden simuliert. Konfigurieren Sie einen Print-Server für echten Druck.'
+            <h3 className={`font-semibold ${
+              serverOnline === null
+                ? 'text-muted-foreground'
+                : serverOnline
+                  ? 'text-green-800'
+                  : 'text-red-800'
+            }`}>
+              {serverOnline === null
+                ? 'Status wird geprueft...'
+                : serverOnline
+                  ? 'Print-Server verbunden'
+                  : 'Print-Server nicht erreichbar'
               }
+            </h3>
+            <p className={`text-sm ${
+              serverOnline === null
+                ? 'text-muted-foreground'
+                : serverOnline
+                  ? 'text-green-700'
+                  : 'text-red-700'
+            }`}>
+              Server: {getPrintServerUrl()}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Printer List */}
-      <div className="grid gap-4">
-        {printers.map((printer) => (
-          <div
-            key={printer.id}
-            className={`bg-card rounded-xl border-2 p-4 transition-all ${
-              printer.isActive ? 'border-border' : 'border-muted opacity-60'
-            } ${printer.isDefault ? 'ring-2 ring-primary ring-offset-2' : ''}`}
-          >
-            <div className="flex items-center gap-4">
-              <div className={`p-3 rounded-full ${printer.isActive ? 'bg-primary/10' : 'bg-muted'}`}>
-                <PrinterIcon className={`w-6 h-6 ${printer.isActive ? 'text-primary' : 'text-muted-foreground'}`} />
-              </div>
-              
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-lg">{printer.name}</h3>
-                  {printer.isDefault && (
-                    <span className="px-2 py-0.5 text-xs font-medium bg-primary text-primary-foreground rounded-full">
-                      Standard
-                    </span>
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {printer.ipAddress}:{printer.port}
-                </p>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={printer.isActive}
-                  onCheckedChange={(checked) => updatePrinter(printer.id, { isActive: checked })}
-                />
-                <span className="text-sm text-muted-foreground w-12">
-                  {printer.isActive ? 'Aktiv' : 'Inaktiv'}
-                </span>
-              </div>
-              
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleTestPrint(printer)}
-                  className="p-2 hover:bg-muted rounded-lg transition-colors"
-                  title="Testdruck"
-                >
-                  <TestTube className="w-5 h-5 text-muted-foreground" />
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedPrinter({ ...printer });
-                    setShowEditDialog(true);
-                  }}
-                  className="p-2 hover:bg-muted rounded-lg transition-colors"
-                  title="Bearbeiten"
-                >
-                  <Settings2 className="w-5 h-5 text-muted-foreground" />
-                </button>
-                {!printer.isDefault && (
-                  <button
-                    onClick={() => handleSetDefault(printer)}
-                    className="p-2 hover:bg-muted rounded-lg transition-colors"
-                    title="Als Standard setzen"
-                  >
-                    <CheckCircle className="w-5 h-5 text-muted-foreground" />
-                  </button>
-                )}
-                <button
-                  onClick={() => handleDeletePrinter(printer)}
-                  className="p-2 hover:bg-destructive/10 rounded-lg transition-colors"
-                  title="Löschen"
-                >
-                  <Trash2 className="w-5 h-5 text-destructive" />
-                </button>
-              </div>
+      {/* Printer Info */}
+      <div className="bg-card rounded-xl border-2 border-border p-4">
+        <div className="flex items-center gap-4">
+          <div className="p-3 rounded-full bg-primary/10">
+            <PrinterIcon className="w-6 h-6 text-primary" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-lg">{getPrinterName()}</h3>
+              <span className="px-2 py-0.5 text-xs font-medium bg-primary text-primary-foreground rounded-full">
+                Standard
+              </span>
             </div>
+            <p className="text-sm text-muted-foreground">
+              Fest konfigurierter Bondrucker
+            </p>
           </div>
-        ))}
-
-        {printers.length === 0 && (
-          <div className="text-center py-12 bg-muted/30 rounded-xl border-2 border-dashed border-muted">
-            <PrinterIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">Noch keine Drucker konfiguriert</p>
-            <button
-              onClick={() => setShowAddDialog(true)}
-              className="touch-btn-primary mt-4"
-            >
-              Ersten Drucker hinzufügen
-            </button>
-          </div>
-        )}
+          <button
+            onClick={handleTestPrint}
+            className="touch-btn-secondary flex items-center gap-2"
+          >
+            <TestTube className="w-4 h-4" />
+            Testdruck
+          </button>
+        </div>
       </div>
 
-      {/* Category Assignments */}
-      {printers.length > 0 && (
-        <div className="bg-card rounded-xl border border-border p-6">
-          <h3 className="font-display text-lg font-semibold mb-4">Kategorie-Drucker-Zuordnung</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Weisen Sie Kategorien einem Drucker zu. Nicht zugewiesene Kategorien werden auf dem Standarddrucker gedruckt.
-          </p>
-          <div className="grid gap-3">
-            {categories.map((category) => (
-              <div key={category.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full category-${category.color}`} />
-                  <span className="font-medium">{category.name}</span>
-                  <span className="text-xs text-muted-foreground">({category.type === 'drinks' ? 'Getränke' : 'Speisen'})</span>
-                </div>
-                <select
-                  value={category.printerId || ''}
-                  onChange={(e) => handleCategoryAssignment(category.id, e.target.value || null)}
-                  className="px-3 py-2 rounded-lg border border-border focus:border-primary outline-none min-w-[200px]"
-                >
-                  <option value="">Standarddrucker</option>
-                  {printers.filter(p => p.isActive).map((printer) => (
-                    <option key={printer.id} value={printer.id}>
-                      {printer.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Print Queue */}
-      {queueState.jobs.length > 0 && (
-        <div className="bg-card rounded-xl border border-border p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display text-lg font-semibold">Druckwarteschlange</h3>
-            <button
-              onClick={() => printQueue.clearCompleted()}
-              className="text-sm text-muted-foreground hover:text-foreground"
-            >
-              Abgeschlossene entfernen
-            </button>
-          </div>
-          <div className="space-y-2">
-            {queueState.jobs.slice(0, 10).map((job) => (
-              <div key={job.id} className="flex items-center justify-between py-2 px-3 bg-muted/30 rounded-lg">
-                <div className="flex items-center gap-3">
-                  {getStatusIcon(job.status)}
-                  <span className="font-medium">{job.printerName}</span>
-                  <span className="text-sm text-muted-foreground">
-                    {new Date(job.createdAt).toLocaleTimeString('de-DE')}
-                  </span>
-                </div>
-                <span className={`text-sm font-medium ${
-                  job.status === 'success' ? 'text-green-600' :
-                  job.status === 'failed' ? 'text-red-600' :
-                  job.status === 'printing' ? 'text-blue-600' :
-                  'text-muted-foreground'
-                }`}>
-                  {job.status === 'pending' && 'Wartend'}
-                  {job.status === 'printing' && 'Druckt...'}
-                  {job.status === 'success' && 'Erfolgreich'}
-                  {job.status === 'failed' && `Fehlgeschlagen (${job.retries}/${job.maxRetries})`}
-                  {job.status === 'retrying' && `Wiederholung ${job.retries}/${job.maxRetries}`}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Admin Print Actions */}
-      {printers.some(p => p.isActive) && (
-        <div className="bg-card rounded-xl border border-border p-6">
-          <h3 className="font-display text-lg font-semibold mb-4">Admin-Druckfunktionen</h3>
-          <div className="flex gap-4">
-            <button
-              onClick={handlePrintDailySummary}
-              className="touch-btn-secondary"
-            >
-              Tagesabschluss drucken
-            </button>
-          </div>
+      <div className="bg-card rounded-xl border border-border p-6">
+        <h3 className="font-display text-lg font-semibold mb-4">Admin-Druckfunktionen</h3>
+        <div className="flex gap-4">
+          <button
+            onClick={handlePrintDailySummary}
+            className="touch-btn-secondary"
+          >
+            Tagesabschluss drucken
+          </button>
         </div>
-      )}
+      </div>
 
-      {/* Add Printer Dialog */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Neuen Drucker hinzufügen</DialogTitle>
-            <DialogDescription>
-              Geben Sie die Verbindungsdaten für den ESC/POS-Thermodrucker ein.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="name">Druckername</Label>
-              <Input
-                id="name"
-                placeholder="z.B. Bar, Küche, Ausschank"
-                value={newPrinter.name}
-                onChange={(e) => setNewPrinter({ ...newPrinter, name: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="ip">IP-Adresse</Label>
-              <Input
-                id="ip"
-                placeholder="192.168.1.100"
-                value={newPrinter.ipAddress}
-                onChange={(e) => setNewPrinter({ ...newPrinter, ipAddress: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="port">Port</Label>
-              <Input
-                id="port"
-                type="number"
-                placeholder="9100"
-                value={newPrinter.port}
-                onChange={(e) => setNewPrinter({ ...newPrinter, port: parseInt(e.target.value) || 9100 })}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>Abbrechen</Button>
-            <Button onClick={handleAddPrinter}>Hinzufügen</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Printer Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Drucker bearbeiten</DialogTitle>
-          </DialogHeader>
-          {selectedPrinter && (
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="edit-name">Druckername</Label>
-                <Input
-                  id="edit-name"
-                  value={selectedPrinter.name}
-                  onChange={(e) => setSelectedPrinter({ ...selectedPrinter, name: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-ip">IP-Adresse</Label>
-                <Input
-                  id="edit-ip"
-                  value={selectedPrinter.ipAddress}
-                  onChange={(e) => setSelectedPrinter({ ...selectedPrinter, ipAddress: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-port">Port</Label>
-                <Input
-                  id="edit-port"
-                  type="number"
-                  value={selectedPrinter.port}
-                  onChange={(e) => setSelectedPrinter({ ...selectedPrinter, port: parseInt(e.target.value) || 9100 })}
-                />
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>Abbrechen</Button>
-            <Button onClick={handleEditPrinter}>Speichern</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Print Server Dialog */}
-      <Dialog open={showServerDialog} onOpenChange={setShowServerDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Print-Server Konfiguration</DialogTitle>
-            <DialogDescription>
-              Verbinden Sie die App mit einem lokalen Print-Server für echten ESC/POS-Druck.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-6">
-            {/* Server URL Input */}
-            <div className="space-y-2">
-              <Label htmlFor="server-url">Print-Server URL</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="server-url"
-                  placeholder="http://192.168.1.100:3001"
-                  value={printServerUrl}
-                  onChange={(e) => setPrintServerUrl(e.target.value)}
-                  className="flex-1"
-                />
-                <Button 
-                  variant="outline" 
-                  onClick={async () => {
-                    if (!printServerUrl.trim()) {
-                      toast.error('Bitte geben Sie eine Server-URL ein');
-                      return;
-                    }
-                    try {
-                      const response = await fetch(`${printServerUrl.trim()}/health`, {
-                        method: 'GET',
-                        signal: AbortSignal.timeout(5000),
-                      });
-                      if (response.ok) {
-                        toast.success('Verbindung zum Print-Server erfolgreich!');
-                      } else {
-                        toast.error(`Server antwortet mit Status ${response.status}`);
-                      }
-                    } catch (error) {
-                      toast.error('Keine Verbindung zum Print-Server möglich');
-                    }
-                  }}
-                >
-                  Testen
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Leer lassen für Simulationsmodus (Druckaufträge werden nur in der Konsole protokolliert)
-              </p>
-            </div>
-
-            {/* Setup Instructions */}
-            <div className="bg-muted/50 rounded-xl p-5 space-y-4">
-              <h4 className="font-semibold text-foreground flex items-center gap-2">
-                <Settings2 className="w-4 h-4" />
-                Print-Server Einrichtung
-              </h4>
-              
-              <div className="text-sm text-muted-foreground space-y-3">
-                <p>
-                  <strong className="text-foreground">Warum ein Print-Server?</strong><br />
-                  Webbrowser können aus Sicherheitsgründen nicht direkt über TCP/IP mit Netzwerkdruckern 
-                  kommunizieren. Der Print-Server empfängt HTTP-Anfragen und leitet diese an die Drucker weiter.
-                </p>
-                
-                <div className="border-t border-border pt-3">
-                  <strong className="text-foreground">Option 1: Node.js Print-Server (empfohlen)</strong>
-                  <div className="mt-2 bg-background rounded-lg p-3 font-mono text-xs overflow-x-auto">
-                    <div className="text-muted-foreground"># Installation</div>
-                    <div>npm install -g escpos-http-server</div>
-                    <div className="mt-2 text-muted-foreground"># Server starten</div>
-                    <div>escpos-http-server --port 3001</div>
-                  </div>
-                </div>
-
-                <div className="border-t border-border pt-3">
-                  <strong className="text-foreground">Option 2: Python Print-Server</strong>
-                  <div className="mt-2 bg-background rounded-lg p-3 font-mono text-xs overflow-x-auto">
-                    <div className="text-muted-foreground"># Installation</div>
-                    <div>pip install flask python-escpos</div>
-                    <div className="mt-2 text-muted-foreground"># Dann eigenen Server erstellen (siehe Dokumentation)</div>
-                  </div>
-                </div>
-
-                <div className="border-t border-border pt-3">
-                  <strong className="text-foreground">API-Endpunkt</strong><br />
-                  Der Print-Server muss einen POST-Endpunkt <code className="bg-background px-1 rounded">/print</code> bereitstellen:
-                  <div className="mt-2 bg-background rounded-lg p-3 font-mono text-xs overflow-x-auto">
-                    <div className="text-muted-foreground">POST /print</div>
-                    <div>{'{'}</div>
-                    <div>  "ip": "192.168.1.50",</div>
-                    <div>  "port": 9100,</div>
-                    <div>  "data": "base64-encoded-escpos-data"</div>
-                    <div>{'}'}</div>
-                  </div>
-                </div>
-
-                <div className="border-t border-border pt-3">
-                  <strong className="text-foreground">Netzwerk-Tipps</strong>
-                  <ul className="list-disc list-inside mt-1 space-y-1">
-                    <li>Print-Server muss im selben Netzwerk wie die Drucker laufen</li>
-                    <li>Falls App auf Tablet läuft: Server-IP statt localhost verwenden</li>
-                    <li>Firewall-Port freigeben (Standard: 3001)</li>
-                    <li>Drucker-Port ist üblicherweise 9100 (Raw/JetDirect)</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* Current Status */}
-            <div className={`rounded-lg border-2 p-4 ${printServerUrl.trim() ? 'bg-primary/5 border-primary/20' : 'bg-amber-50 border-amber-200'}`}>
-              <div className="flex items-center gap-3">
-                {printServerUrl.trim() ? (
-                  <Wifi className="w-5 h-5 text-primary" />
-                ) : (
-                  <WifiOff className="w-5 h-5 text-amber-600" />
-                )}
-                <div>
-                  <span className={`font-medium ${printServerUrl.trim() ? 'text-primary' : 'text-amber-700'}`}>
-                    {printServerUrl.trim() ? 'Server-Modus' : 'Simulationsmodus'}
-                  </span>
-                  <p className="text-xs text-muted-foreground">
-                    {printServerUrl.trim() 
-                      ? 'Druckaufträge werden an den Print-Server gesendet'
-                      : 'Druckaufträge werden nur in der Browser-Konsole protokolliert'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => {
-              setPrintServerUrl('');
-              printQueue.setPrintServerUrl(null);
-              toast.info('Simulationsmodus aktiviert');
-            }}>
-              Simulation verwenden
-            </Button>
-            <Button variant="outline" onClick={() => setShowServerDialog(false)}>
-              Abbrechen
-            </Button>
-            <Button onClick={handleSavePrintServer}>
-              Speichern
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Info Box */}
+      <div className="bg-muted/50 rounded-xl border border-border p-4 text-sm text-muted-foreground">
+        <p className="font-medium text-foreground mb-2">Hinweise:</p>
+        <ul className="list-disc list-inside space-y-1">
+          <li>Der Drucker "{getPrinterName()}" ist fest hinterlegt.</li>
+          <li>Der Druck erfolgt ueber den Print-Server unter {getPrintServerUrl()}.</li>
+          <li>Bons werden automatisch nach Bezahlung gedruckt.</li>
+          <li>In Artikelnamen und Bontexten duerfen keine Umlaute oder Sonderzeichen verwendet werden.</li>
+        </ul>
+      </div>
     </div>
   );
 };
