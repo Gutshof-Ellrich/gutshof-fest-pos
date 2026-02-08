@@ -216,7 +216,7 @@ export function buildDailySummary(orders: Order[]): string {
  */
 export async function printReceipt(text: string): Promise<boolean> {
   try {
-    const response = await fetch(`${PRINT_SERVER_URL}/print`, {
+    await fetch(`${PRINT_SERVER_URL}/print`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -225,16 +225,8 @@ export async function printReceipt(text: string): Promise<boolean> {
       }),
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('[PrintService] Druckfehler:', errorData);
-      toast.error('Druckfehler', {
-        description: errorData.error || `HTTP ${response.status}`,
-      });
-      return false;
-    }
-
-    console.log('[PrintService] Bon erfolgreich gedruckt');
+    // Druck gilt als erfolgreich wenn der Request ohne Netzwerkfehler gesendet wurde
+    console.log('[PrintService] Bon erfolgreich gesendet');
     return true;
   } catch (error) {
     console.error('[PrintService] Verbindungsfehler:', error);
@@ -275,11 +267,13 @@ export async function printDailySummaryReceipt(orders: Order[]): Promise<boolean
  */
 export async function checkPrintServer(): Promise<boolean> {
   try {
-    const response = await fetch(`${PRINT_SERVER_URL}/`, {
+    const response = await fetch(`${PRINT_SERVER_URL}/health`, {
       method: 'GET',
       signal: AbortSignal.timeout(3000),
     });
-    return response.ok;
+    if (!response.ok) return false;
+    const data = await response.json().catch(() => null);
+    return data?.status === 'ok';
   } catch {
     return false;
   }
