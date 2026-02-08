@@ -19,7 +19,6 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
     categories,
     products,
     orders,
-    printers,
     depositPerGlass,
     addCategory,
     updateCategory,
@@ -28,9 +27,6 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
     updateProduct,
     deleteProduct,
     setDepositPerGlass,
-    addPrinter,
-    updatePrinter,
-    deletePrinter,
     clearOrders,
   } = useAppStore();
 
