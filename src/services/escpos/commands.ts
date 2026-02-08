@@ -68,7 +68,7 @@ export const centerText = (text: string, width: number = RECEIPT_WIDTH): string 
 
 // Helper to format currency
 export const formatCurrency = (amount: number): string => {
-  return amount.toFixed(2).replace('.', ',') + ' €';
+  return amount.toFixed(2).replace('.', ',') + ' EUR';
 };
 
 // Helper to format quantity and price

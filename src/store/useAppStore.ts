@@ -158,7 +158,7 @@ interface AppState {
 
 // Initial demo data
 const initialCategories: Category[] = [
-  { id: 'cat-1', name: 'Weißwein', color: 'white-wine', type: 'drinks', sortOrder: 1 },
+  { id: 'cat-1', name: 'Weisswein', color: 'white-wine', type: 'drinks', sortOrder: 1 },
   { id: 'cat-2', name: 'Rotwein', color: 'red-wine', type: 'drinks', sortOrder: 2 },
   { id: 'cat-3', name: 'Saftschorlen', color: 'juice', type: 'drinks', sortOrder: 3 },
   { id: 'cat-4', name: 'Wasser & Softdrinks', color: 'water', type: 'drinks', sortOrder: 4 },
@@ -168,21 +168,21 @@ const initialCategories: Category[] = [
 ];
 
 const initialProducts: Product[] = [
-  // Weißwein
+  // Weisswein
   { id: 'prod-1', name: 'Riesling 0,25l', price: 5.50, categoryId: 'cat-1', sortOrder: 1 },
   { id: 'prod-2', name: 'Riesling 0,125l', price: 3.00, categoryId: 'cat-1', sortOrder: 2 },
   { id: 'prod-3', name: 'Kleine Weinschorle', price: 3.50, categoryId: 'cat-1', sortOrder: 3 },
-  { id: 'prod-4', name: 'Große Weinschorle', price: 5.00, categoryId: 'cat-1', sortOrder: 4 },
+  { id: 'prod-4', name: 'Grosse Weinschorle', price: 5.00, categoryId: 'cat-1', sortOrder: 4 },
   // Rotwein
-  { id: 'prod-5', name: 'Spätburgunder 0,25l', price: 6.00, categoryId: 'cat-2', sortOrder: 1 },
-  { id: 'prod-6', name: 'Spätburgunder 0,125l', price: 3.50, categoryId: 'cat-2', sortOrder: 2 },
+  { id: 'prod-5', name: 'Spaetburgunder 0,25l', price: 6.00, categoryId: 'cat-2', sortOrder: 1 },
+  { id: 'prod-6', name: 'Spaetburgunder 0,125l', price: 3.50, categoryId: 'cat-2', sortOrder: 2 },
   { id: 'prod-7', name: 'Kleine Weinschorle Rot', price: 4.00, categoryId: 'cat-2', sortOrder: 3 },
-  { id: 'prod-8', name: 'Große Weinschorle Rot', price: 5.50, categoryId: 'cat-2', sortOrder: 4 },
+  { id: 'prod-8', name: 'Grosse Weinschorle Rot', price: 5.50, categoryId: 'cat-2', sortOrder: 4 },
   // Saftschorlen
   { id: 'prod-9', name: 'Apfelschorle klein', price: 2.50, categoryId: 'cat-3', sortOrder: 1 },
-  { id: 'prod-10', name: 'Apfelschorle groß', price: 3.50, categoryId: 'cat-3', sortOrder: 2 },
+  { id: 'prod-10', name: 'Apfelschorle gross', price: 3.50, categoryId: 'cat-3', sortOrder: 2 },
   { id: 'prod-11', name: 'Traubensaftschorle klein', price: 2.50, categoryId: 'cat-3', sortOrder: 3 },
-  { id: 'prod-12', name: 'Traubensaftschorle groß', price: 3.50, categoryId: 'cat-3', sortOrder: 4 },
+  { id: 'prod-12', name: 'Traubensaftschorle gross', price: 3.50, categoryId: 'cat-3', sortOrder: 4 },
   // Wasser & Softdrinks
   { id: 'prod-13', name: 'Mineralwasser 0,25l', price: 2.00, categoryId: 'cat-4', sortOrder: 1 },
   { id: 'prod-14', name: 'Mineralwasser 0,5l', price: 3.00, categoryId: 'cat-4', sortOrder: 2 },
@@ -196,7 +196,7 @@ const initialProducts: Product[] = [
   // Grill
   { id: 'prod-21', name: 'Bratwurst', price: 4.00, categoryId: 'cat-6', sortOrder: 1 },
   { id: 'prod-22', name: 'Steak', price: 8.00, categoryId: 'cat-6', sortOrder: 2 },
-  { id: 'prod-23', name: 'Grillkäse', price: 5.00, categoryId: 'cat-6', sortOrder: 3 },
+  { id: 'prod-23', name: 'Grillkaese', price: 5.00, categoryId: 'cat-6', sortOrder: 3 },
   // Beilagen
   { id: 'prod-24', name: 'Pommes', price: 3.00, categoryId: 'cat-7', sortOrder: 1 },
   { id: 'prod-25', name: 'Brot', price: 1.50, categoryId: 'cat-7', sortOrder: 2 },
