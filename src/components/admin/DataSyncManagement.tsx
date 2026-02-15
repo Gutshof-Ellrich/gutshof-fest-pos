@@ -16,14 +16,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import type { CupsPrinter } from '@/services/cupsPrintService';
 
 interface ExportData {
   version: string;
   exportedAt: string;
-  categories: typeof useAppStore.getState extends () => infer S ? S extends { categories: infer C } ? C : never : never;
-  products: typeof useAppStore.getState extends () => infer S ? S extends { products: infer P } ? P : never : never;
-  printers: typeof useAppStore.getState extends () => infer S ? S extends { printers: infer R } ? R : never : never;
-  tables: typeof useAppStore.getState extends () => infer S ? S extends { tables: infer T } ? T : never : never;
+  categories: ReturnType<typeof useAppStore.getState>['categories'];
+  products: ReturnType<typeof useAppStore.getState>['products'];
+  cupsPrinters: CupsPrinter[];
+  tables: ReturnType<typeof useAppStore.getState>['tables'];
   depositPerGlass: number;
 }
 
@@ -31,12 +32,12 @@ const DataSyncManagement = () => {
   const { 
     categories, 
     products, 
-    printers, 
+    cupsPrinters, 
     tables, 
     depositPerGlass,
     setCategories,
     setProducts,
-    setPrinters,
+    setCupsPrinters,
     setTables,
     setDepositPerGlass,
   } = useAppStore();
@@ -46,11 +47,11 @@ const DataSyncManagement = () => {
 
   const handleExport = () => {
     const exportData: ExportData = {
-      version: '1.0',
+      version: '2.0',
       exportedAt: new Date().toISOString(),
       categories,
       products,
-      printers,
+      cupsPrinters,
       tables,
       depositPerGlass,
     };
@@ -78,15 +79,13 @@ const DataSyncManagement = () => {
       try {
         const data = JSON.parse(e.target?.result as string) as ExportData;
         
-        // Validate structure
         if (!data.version || !data.categories || !data.products) {
-          throw new Error('Ungültiges Dateiformat');
+          throw new Error('Ungueltiges Dateiformat');
         }
 
-        // Apply imported data
         if (data.categories) setCategories(data.categories);
         if (data.products) setProducts(data.products);
-        if (data.printers) setPrinters(data.printers);
+        if (data.cupsPrinters) setCupsPrinters(data.cupsPrinters);
         if (data.tables) setTables(data.tables);
         if (data.depositPerGlass) setDepositPerGlass(data.depositPerGlass);
 
@@ -101,18 +100,14 @@ const DataSyncManagement = () => {
       }
     };
     reader.readAsText(file);
-    
-    // Reset input
     event.target.value = '';
   };
 
   const triggerSync = () => {
-    // Trigger a storage event for other tabs
     const currentData = localStorage.getItem('gutshof-weinfest-pos');
     if (currentData) {
-      // Force a re-save to trigger storage events in other tabs
       localStorage.setItem('gutshof-weinfest-pos', currentData);
-      toast.success('Synchronisation angestoßen');
+      toast.success('Synchronisation angestossen');
     }
   };
 
@@ -125,7 +120,7 @@ const DataSyncManagement = () => {
             Datensynchronisation
           </CardTitle>
           <CardDescription>
-            Synchronisiere Einstellungen zwischen mehreren Geräten
+            Synchronisiere Einstellungen zwischen mehreren Geraeten
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -143,7 +138,7 @@ const DataSyncManagement = () => {
               </div>
               <div className="flex flex-col">
                 <span className="text-muted-foreground">Drucker</span>
-                <span className="text-lg font-semibold">{printers.length}</span>
+                <span className="text-lg font-semibold">{cupsPrinters.length}</span>
               </div>
               <div className="flex flex-col">
                 <span className="text-muted-foreground">Tische</span>
@@ -154,7 +149,6 @@ const DataSyncManagement = () => {
 
           {/* Export/Import Section */}
           <div className="grid md:grid-cols-2 gap-4">
-            {/* Export */}
             <Card className="border-2 border-dashed">
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center text-center space-y-4">
@@ -164,7 +158,7 @@ const DataSyncManagement = () => {
                   <div>
                     <h4 className="font-medium">Daten exportieren</h4>
                     <p className="text-sm text-muted-foreground">
-                      Erstelle eine Backup-Datei zum Übertragen auf andere Geräte
+                      Erstelle eine Backup-Datei zum Uebertragen auf andere Geraete
                     </p>
                   </div>
                   <Button onClick={handleExport} className="w-full">
@@ -181,7 +175,6 @@ const DataSyncManagement = () => {
               </CardContent>
             </Card>
 
-            {/* Import */}
             <Card className="border-2 border-dashed">
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center text-center space-y-4">
@@ -191,7 +184,7 @@ const DataSyncManagement = () => {
                   <div>
                     <h4 className="font-medium">Daten importieren</h4>
                     <p className="text-sm text-muted-foreground">
-                      Lade eine Backup-Datei von einem anderen Gerät
+                      Lade eine Backup-Datei von einem anderen Geraet
                     </p>
                   </div>
                   <AlertDialog>
@@ -205,7 +198,7 @@ const DataSyncManagement = () => {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Daten importieren?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Dies überschreibt alle aktuellen Kategorien, Produkte, Drucker und Tisch-Einstellungen. 
+                          Dies ueberschreibt alle aktuellen Kategorien, Produkte, Drucker und Tisch-Einstellungen. 
                           Bestellungen bleiben erhalten.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
@@ -250,7 +243,7 @@ const DataSyncManagement = () => {
                       <Badge variant="secondary" className="text-xs">Automatisch</Badge>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Änderungen werden automatisch zwischen Browser-Tabs auf diesem Gerät synchronisiert.
+                      Aenderungen werden automatisch zwischen Browser-Tabs auf diesem Geraet synchronisiert.
                     </p>
                   </div>
                 </div>
@@ -266,14 +259,14 @@ const DataSyncManagement = () => {
           <div className="p-4 bg-muted/30 rounded-lg space-y-3">
             <h4 className="font-medium flex items-center gap-2">
               <Smartphone className="h-4 w-4" />
-              Anleitung für mehrere Geräte
+              Anleitung fuer mehrere Geraete
             </h4>
             <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
-              <li>Konfiguriere alle Einstellungen auf dem Hauptgerät (Kategorien, Produkte, Drucker)</li>
+              <li>Konfiguriere alle Einstellungen auf dem Hauptgeraet (Kategorien, Produkte, Drucker)</li>
               <li>Exportiere die Daten als JSON-Datei</li>
-              <li>Übertrage die Datei auf andere Geräte (z.B. per AirDrop, E-Mail, USB)</li>
-              <li>Importiere die Datei auf jedem zusätzlichen Gerät</li>
-              <li>Wiederhole den Vorgang bei Änderungen an der Konfiguration</li>
+              <li>Uebertrage die Datei auf andere Geraete (z.B. per AirDrop, E-Mail, USB)</li>
+              <li>Importiere die Datei auf jedem zusaetzlichen Geraet</li>
+              <li>Wiederhole den Vorgang bei Aenderungen an der Konfiguration</li>
             </ol>
           </div>
         </CardContent>
