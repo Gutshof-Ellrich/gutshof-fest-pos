@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { CupsPrinter } from '@/services/cupsPrintService';
 
 // Types
 export type UserRole = 'bar' | 'food' | 'combined' | 'admin' | null;
@@ -62,16 +63,6 @@ export interface TableTab {
   updatedAt: Date;
 }
 
-// Printer type kept for backward compatibility with persisted data
-export interface Printer {
-  id: string;
-  name: string;
-  ipAddress: string;
-  port: number;
-  isDefault: boolean;
-  isActive: boolean;
-}
-
 export interface Table {
   id: string;
   name: string;
@@ -84,10 +75,6 @@ interface AppState {
   currentRole: UserRole;
   setRole: (role: UserRole) => void;
   logout: () => void;
-
-  // Print Server
-  printServerUrl: string;
-  setPrintServerUrl: (url: string) => void;
 
   // Categories & Products
   categories: Category[];
@@ -126,12 +113,12 @@ interface AppState {
   deleteOrder: (orderId: string) => void;
   clearOrders: () => void;
 
-  // Printers
-  printers: Printer[];
-  setPrinters: (printers: Printer[]) => void;
-  addPrinter: (printer: Printer) => void;
-  updatePrinter: (id: string, updates: Partial<Printer>) => void;
-  deletePrinter: (id: string) => void;
+  // CUPS Printers
+  cupsPrinters: CupsPrinter[];
+  setCupsPrinters: (printers: CupsPrinter[]) => void;
+  addCupsPrinter: (printer: CupsPrinter) => void;
+  updateCupsPrinter: (id: string, updates: Partial<CupsPrinter>) => void;
+  deleteCupsPrinter: (id: string) => void;
 
   // Tables
   tables: Table[];
@@ -172,36 +159,29 @@ const initialCategories: Category[] = [
 ];
 
 const initialProducts: Product[] = [
-  // Weisswein
   { id: 'prod-1', name: 'Riesling 0,25l', price: 5.50, categoryId: 'cat-1', sortOrder: 1 },
   { id: 'prod-2', name: 'Riesling 0,125l', price: 3.00, categoryId: 'cat-1', sortOrder: 2 },
   { id: 'prod-3', name: 'Kleine Weinschorle', price: 3.50, categoryId: 'cat-1', sortOrder: 3 },
   { id: 'prod-4', name: 'Grosse Weinschorle', price: 5.00, categoryId: 'cat-1', sortOrder: 4 },
-  // Rotwein
   { id: 'prod-5', name: 'Spaetburgunder 0,25l', price: 6.00, categoryId: 'cat-2', sortOrder: 1 },
   { id: 'prod-6', name: 'Spaetburgunder 0,125l', price: 3.50, categoryId: 'cat-2', sortOrder: 2 },
   { id: 'prod-7', name: 'Kleine Weinschorle Rot', price: 4.00, categoryId: 'cat-2', sortOrder: 3 },
   { id: 'prod-8', name: 'Grosse Weinschorle Rot', price: 5.50, categoryId: 'cat-2', sortOrder: 4 },
-  // Saftschorlen
   { id: 'prod-9', name: 'Apfelschorle klein', price: 2.50, categoryId: 'cat-3', sortOrder: 1 },
   { id: 'prod-10', name: 'Apfelschorle gross', price: 3.50, categoryId: 'cat-3', sortOrder: 2 },
   { id: 'prod-11', name: 'Traubensaftschorle klein', price: 2.50, categoryId: 'cat-3', sortOrder: 3 },
   { id: 'prod-12', name: 'Traubensaftschorle gross', price: 3.50, categoryId: 'cat-3', sortOrder: 4 },
-  // Wasser & Softdrinks
   { id: 'prod-13', name: 'Mineralwasser 0,25l', price: 2.00, categoryId: 'cat-4', sortOrder: 1 },
   { id: 'prod-14', name: 'Mineralwasser 0,5l', price: 3.00, categoryId: 'cat-4', sortOrder: 2 },
   { id: 'prod-15', name: 'Cola 0,33l', price: 3.00, categoryId: 'cat-4', sortOrder: 3 },
   { id: 'prod-16', name: 'Fanta 0,33l', price: 3.00, categoryId: 'cat-4', sortOrder: 4 },
-  // Bier
   { id: 'prod-17', name: 'Pils 0,3l', price: 3.50, categoryId: 'cat-5', sortOrder: 1 },
   { id: 'prod-18', name: 'Pils 0,5l', price: 4.50, categoryId: 'cat-5', sortOrder: 2 },
   { id: 'prod-19', name: 'Radler 0,3l', price: 3.50, categoryId: 'cat-5', sortOrder: 3 },
   { id: 'prod-20', name: 'Radler 0,5l', price: 4.50, categoryId: 'cat-5', sortOrder: 4 },
-  // Grill
   { id: 'prod-21', name: 'Bratwurst', price: 4.00, categoryId: 'cat-6', sortOrder: 1 },
   { id: 'prod-22', name: 'Steak', price: 8.00, categoryId: 'cat-6', sortOrder: 2 },
   { id: 'prod-23', name: 'Grillkaese', price: 5.00, categoryId: 'cat-6', sortOrder: 3 },
-  // Beilagen
   { id: 'prod-24', name: 'Pommes', price: 3.00, categoryId: 'cat-7', sortOrder: 1 },
   { id: 'prod-25', name: 'Brot', price: 1.50, categoryId: 'cat-7', sortOrder: 2 },
 ];
@@ -213,16 +193,6 @@ export const useAppStore = create<AppState>()(
       currentRole: null,
       setRole: (role) => set({ currentRole: role }),
       logout: () => set({ currentRole: null, cart: [], deposit: { newDeposits: 0, returnedDeposits: 0, depositValue: 2 }, serviceType: 'service' }),
-
-      // Print Server
-      printServerUrl: 'https://192.168.188.200:3443',
-      setPrintServerUrl: (url) => {
-        set({ printServerUrl: url });
-        // Dynamically update the print service module
-        import('@/services/printService').then(({ configurePrintServer }) => {
-          configurePrintServer(url);
-        });
-      },
 
       // Categories & Products
       categories: initialCategories,
@@ -312,15 +282,15 @@ export const useAppStore = create<AppState>()(
       })),
       clearOrders: () => set({ orders: [] }),
 
-      // Printers
-      printers: [],
-      setPrinters: (printers) => set({ printers }),
-      addPrinter: (printer) => set((state) => ({ printers: [...state.printers, printer] })),
-      updatePrinter: (id, updates) => set((state) => ({
-        printers: state.printers.map((p) => p.id === id ? { ...p, ...updates } : p)
+      // CUPS Printers
+      cupsPrinters: [],
+      setCupsPrinters: (printers) => set({ cupsPrinters: printers }),
+      addCupsPrinter: (printer) => set((state) => ({ cupsPrinters: [...state.cupsPrinters, printer] })),
+      updateCupsPrinter: (id, updates) => set((state) => ({
+        cupsPrinters: state.cupsPrinters.map((p) => p.id === id ? { ...p, ...updates } : p)
       })),
-      deletePrinter: (id) => set((state) => ({
-        printers: state.printers.filter((p) => p.id !== id)
+      deleteCupsPrinter: (id) => set((state) => ({
+        cupsPrinters: state.cupsPrinters.filter((p) => p.id !== id)
       })),
 
       // Tables
@@ -376,7 +346,6 @@ export const useAppStore = create<AppState>()(
         
         const change = amountPaid ? amountPaid - tab.totalAmount : undefined;
         
-        // Mark all orders in the tab as paid
         const updatedOrders = state.orders.map((o) => {
           const isInTab = tab.orders.some((tabOrder) => tabOrder.id === o.id);
           return isInTab ? { ...o, isPaid: true, paymentMethod, amountPaid, change } : o;
@@ -406,21 +375,12 @@ export const useAppStore = create<AppState>()(
         categories: state.categories,
         products: state.products,
         orders: state.orders,
-        printers: state.printers,
+        cupsPrinters: state.cupsPrinters,
         tables: state.tables,
         tableTabs: state.tableTabs,
         depositPerGlass: state.depositPerGlass,
         backgroundImage: state.backgroundImage,
-        printServerUrl: state.printServerUrl,
       }),
-      onRehydrateStorage: () => (state) => {
-        // Sync persisted printServerUrl to the printService module on app load
-        if (state?.printServerUrl) {
-          import('@/services/printService').then(({ configurePrintServer }) => {
-            configurePrintServer(state.printServerUrl);
-          });
-        }
-      },
     }
   )
 );

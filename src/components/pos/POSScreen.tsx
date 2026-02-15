@@ -6,7 +6,7 @@ import CartPanel from './CartPanel';
 import PaymentDialog from './PaymentDialog';
 import OpenTablesPanel from './OpenTablesPanel';
 import OrderHistoryDialog from './OrderHistoryDialog';
-import { printOrderReceipt } from '@/services/printService';
+import { printOrderForRole } from '@/services/cupsPrintService';
 import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ShoppingCart, Clock, Receipt } from 'lucide-react';
@@ -29,9 +29,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
 
   const { setServiceType } = useAppStore();
 
-  // Set default service type based on role
   useEffect(() => {
-    // Bar defaults to togo, food and combined default to service
     const defaultServiceType = role === 'bar' ? 'togo' : 'service';
     setServiceType(defaultServiceType);
   }, [role, setServiceType]);
@@ -46,6 +44,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     tables,
     tableTabs,
     orders,
+    cupsPrinters,
     addToCart,
     removeFromCart,
     updateCartQuantity,
@@ -59,23 +58,19 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
   // Filter categories based on role
   const filteredCategories = useMemo(() => {
     if (role === 'combined') {
-      // Show all categories for combined role
       return [...categories].sort((a, b) => a.sortOrder - b.sortOrder);
     }
     const type = role === 'bar' ? 'drinks' : 'food';
     return categories.filter((cat) => cat.type === type);
   }, [categories, role]);
 
-  // Determine if deposit should be shown (bar and combined roles)
   const showDeposit = role === 'bar' || role === 'combined';
 
-  // Get products for selected category
   const categoryProducts = useMemo(() => {
     if (!selectedCategoryId) return [];
     return products.filter((p) => p.categoryId === selectedCategoryId);
   }, [products, selectedCategoryId]);
 
-  // Calculate cart quantities for display
   const cartQuantities = useMemo(() => {
     const quantities: Record<string, number> = {};
     cart.forEach((item) => {
@@ -99,14 +94,12 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
       return;
     }
     
-    // Check table requirement for service orders
     const activeTables = tables.filter(t => t.isActive);
     if (serviceType === 'service' && activeTables.length > 0 && !selectedTableId) {
-      toast.error('Bitte wählen Sie einen Tisch aus');
+      toast.error('Bitte waehlen Sie einen Tisch aus');
       return;
     }
     
-    // Close mobile cart before showing payment dialog
     setMobileCartOpen(false);
     setShowPayment(true);
   };
@@ -121,7 +114,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
       items: [...cart],
       deposit: { ...deposit, depositValue: depositPerGlass },
       serviceType,
-      paymentMethod: payNow ? paymentMethod : 'cash', // Default for unpaid orders
+      paymentMethod: payNow ? paymentMethod : 'cash',
       total: itemsTotal,
       depositTotal: depositSaldo,
       grandTotal,
@@ -136,14 +129,13 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
 
     addOrder(order);
 
-    // If pay later, add to table tab
     if (!payNow && serviceType === 'service' && selectedTableId && selectedTableName) {
       addToTableTab(selectedTableId, selectedTableName, order);
     }
     
-    // Print receipt via print server
+    // Print receipt to all assigned printers for this role
     if (payNow && order.items.length > 0) {
-      printOrderReceipt(order);
+      printOrderForRole(order, cupsPrinters, role);
     }
     
     clearCart();
@@ -153,40 +145,37 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     setSelectedTableName(null);
 
     const tableInfo = serviceType === 'service' && selectedTableName 
-      ? ` – Tisch ${selectedTableName}` 
+      ? ` - Tisch ${selectedTableName}` 
       : '';
 
     if (payNow) {
       toast.success(
         `Bestellung ${serviceType === 'togo' ? 'TO GO' : 'SERVICE'}${tableInfo} abgeschlossen`,
         {
-          description: `${grandTotal.toFixed(2).replace('.', ',')} € - ${paymentMethod === 'cash' ? 'Bar' : 'Karte'}`,
+          description: `${grandTotal.toFixed(2).replace('.', ',')} EUR - ${paymentMethod === 'cash' ? 'Bar' : 'Karte'}`,
         }
       );
     } else {
       toast.success(
         `Bestellung auf Tisch ${selectedTableName} gebucht`,
         {
-          description: `${grandTotal.toFixed(2).replace('.', ',')} € - Zahlung später`,
+          description: `${grandTotal.toFixed(2).replace('.', ',')} EUR - Zahlung spaeter`,
         }
       );
     }
   };
 
-  const roleTitle = role === 'bar' ? 'Getränke' : role === 'food' ? 'Speisen' : 'Komplett';
+  const roleTitle = role === 'bar' ? 'Getraenke' : role === 'food' ? 'Speisen' : 'Komplett';
   const roleColor = role === 'bar' ? 'text-primary' : role === 'food' ? 'text-success' : 'text-violet-600';
   
-  // Count open tables for badge
   const openTablesCount = tableTabs.length;
   
-  // Count completed orders today for this role
   const todayOrdersCount = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return orders.filter(o => o.isPaid && o.role === role && new Date(o.timestamp) >= today).length;
   }, [orders, role]);
 
-  // Calculate total items in cart for badge
   const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
   const cartTotal = useMemo(() => {
     const itemsTotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
@@ -228,7 +217,6 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            {/* Order History Button */}
             <button
               onClick={() => setShowOrderHistory(true)}
               className="relative touch-btn-secondary text-sm md:text-base py-1.5 px-3 md:py-2 md:px-4 min-h-0 flex items-center gap-1"
@@ -241,7 +229,6 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
                 </span>
               )}
             </button>
-            {/* Open Tables Button */}
             <button
               onClick={() => setShowOpenTables(true)}
               className="relative touch-btn-secondary text-sm md:text-base py-1.5 px-3 md:py-2 md:px-4 min-h-0 flex items-center gap-1"
@@ -266,9 +253,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        {/* Left Side - Categories & Products */}
         <div className="flex-1 overflow-y-auto p-3 md:p-6 pb-24 md:pb-6 custom-scrollbar">
-          {/* Categories */}
           <div className="mb-4 md:mb-6">
             <h2 className="font-display text-base md:text-lg font-semibold text-muted-foreground mb-2 md:mb-4">
               Kategorien
@@ -281,7 +266,6 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
             />
           </div>
 
-          {/* Products */}
           <div>
             <h2 className="font-display text-base md:text-lg font-semibold text-muted-foreground mb-2 md:mb-4">
               {selectedCategoryId
@@ -296,7 +280,6 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
           </div>
         </div>
 
-        {/* Desktop/Tablet Cart - Hidden on mobile */}
         <div className="hidden md:flex md:w-[350px] lg:w-[400px] border-l border-border p-4 flex-col">
           <CartPanel {...cartPanelProps} />
         </div>
@@ -315,7 +298,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
               )}
               {cartTotal > 0 && (
                 <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-card text-foreground text-xs font-semibold px-2 py-0.5 rounded-full shadow border border-border whitespace-nowrap">
-                  {cartTotal.toFixed(2).replace('.', ',')} €
+                  {cartTotal.toFixed(2).replace('.', ',')} EUR
                 </span>
               )}
             </button>
@@ -331,7 +314,6 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
         </Sheet>
       </div>
 
-      {/* Payment Dialog */}
       <PaymentDialog
         isOpen={showPayment}
         onClose={() => setShowPayment(false)}
@@ -344,13 +326,11 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
         allowPayLater={serviceType === 'service' && !!selectedTableId}
       />
 
-      {/* Open Tables Panel */}
       <OpenTablesPanel
         isOpen={showOpenTables}
         onClose={() => setShowOpenTables(false)}
       />
 
-      {/* Order History Dialog */}
       <OrderHistoryDialog
         isOpen={showOrderHistory}
         onClose={() => setShowOrderHistory(false)}
