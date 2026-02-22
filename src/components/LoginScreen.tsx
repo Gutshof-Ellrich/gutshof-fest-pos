@@ -31,7 +31,7 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
       {/* Content Container */}
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header */}
-        <header className="pt-12 md:pt-16 pb-4 px-6 flex flex-col items-center">
+        <header className="pt-20 md:pt-28 pb-4 px-6 flex flex-col items-center">
           <h1 className={`text-[clamp(1.8rem,5vw,3.75rem)] tracking-[0.04em] leading-relaxed text-center whitespace-nowrap ${
             backgroundImage ? 'text-white' : 'text-primary'
           }`} style={{ fontFamily: "Zapfino, 'Palace Script MT', 'Lucida Calligraphy', cursive", fontWeight: 700 }}>
