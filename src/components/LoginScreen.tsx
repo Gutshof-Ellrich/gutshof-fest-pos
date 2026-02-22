@@ -31,20 +31,20 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
       {/* Content Container */}
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header */}
-        <header className="py-8 px-6 text-center flex flex-col items-center">
+        <header className="pt-10 pb-6 px-6 flex flex-col items-center gap-4">
           <img
             src={logoGutshof}
             alt="Logo Gutshof Ellrich"
-            className="w-28 h-28 md:w-36 md:h-36 lg:w-44 lg:h-44 object-contain mb-4 drop-shadow-lg"
+            className="w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 object-contain drop-shadow-lg"
           />
-          <h1 className={`text-4xl md:text-5xl lg:text-6xl mb-4 tracking-[0.04em] leading-snug ${
+          <h1 className={`text-4xl md:text-5xl lg:text-6xl tracking-[0.04em] leading-relaxed ${
             backgroundImage ? 'text-white' : 'text-primary'
           }`} style={{ fontFamily: "Zapfino, 'Palace Script MT', 'Lucida Calligraphy', cursive", fontWeight: 700 }}>
             Gutshof Ellrich
           </h1>
-          <p className={`text-xl font-display ${
-            backgroundImage ? 'text-white/80' : 'text-muted-foreground'
-          }`}>
+          <p className={`text-base md:text-lg tracking-[0.15em] uppercase ${
+            backgroundImage ? 'text-white/70' : 'text-muted-foreground'
+          }`} style={{ fontFamily: "Arial, Helvetica, sans-serif", fontWeight: 400 }}>
             Kassensystem
           </p>
         </header>
