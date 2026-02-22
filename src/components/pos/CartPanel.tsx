@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CartItem, DepositInfo, ServiceType, Table } from '@/store/useAppStore';
+import { CartItem, DepositInfo, ServiceType, Table, useAppStore } from '@/store/useAppStore';
 import TableSelector from './TableSelector';
 
 interface CartPanelProps {
@@ -40,6 +40,8 @@ const CartPanel = ({
   onClearCart,
 }: CartPanelProps) => {
   const [showTableSelector, setShowTableSelector] = useState(false);
+  const togoCounter = useAppStore((s) => s.togoCounter);
+  const nextTogoNumber = (togoCounter + 1) % 1001;
 
   const itemsTotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const depositNew = showDeposit ? deposit.newDeposits * depositPerGlass : 0;
@@ -240,6 +242,14 @@ const CartPanel = ({
             TO GO
           </button>
         </div>
+
+        {/* ToGo Number Preview */}
+        {serviceType === 'togo' && (
+          <div className="mt-2 md:mt-3 bg-amber-50 border-2 border-amber-300 rounded-xl py-2 px-3 text-center">
+            <span className="text-xs text-amber-700 font-medium">Naechste ToGo-Nr:</span>
+            <span className="ml-2 text-lg font-bold text-amber-900 font-mono">{nextTogoNumber}</span>
+          </div>
+        )}
 
         {/* Table Selection for Service Orders */}
         {serviceType === 'service' && hasActiveTables && (
