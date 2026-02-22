@@ -154,7 +154,7 @@ const initialCategories: Category[] = [
   { id: 'cat-3', name: 'Saftschorlen', color: 'juice', type: 'drinks', sortOrder: 3 },
   { id: 'cat-4', name: 'Wasser & Softdrinks', color: 'water', type: 'drinks', sortOrder: 4 },
   { id: 'cat-5', name: 'Bier', color: 'beer', type: 'drinks', sortOrder: 5 },
-  { id: 'cat-6', name: 'Grill', color: 'grill', type: 'food', sortOrder: 6 },
+  { id: 'cat-6', name: 'Warme Speisen', color: 'grill', type: 'food', sortOrder: 6 },
   { id: 'cat-7', name: 'Beilagen', color: 'sides', type: 'food', sortOrder: 7 },
 ];
 
