@@ -43,22 +43,22 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
             }`} style={{ fontFamily: "Zapfino, 'Palace Script MT', 'Lucida Calligraphy', cursive", fontWeight: 700 }}>
               Gutshof Ellrich
             </h1>
-            <p className={`text-2xl font-display font-bold tracking-[0.08em] mt-6 text-center ${
-              backgroundImage ? 'text-white/80' : 'text-muted-foreground'
-            }`}>
-              Kassensystem
-            </p>
           </div>
         </header>
 
         {/* Login Options */}
         <main className="flex-1 flex items-center justify-center px-6 pb-12">
           <div className="w-full max-w-4xl">
-            <h2 className={`text-2xl font-display font-semibold text-center mb-8 ${
+            <h2 className={`text-2xl md:text-3xl font-display font-bold text-center mb-2 uppercase tracking-[0.12em] ${
               backgroundImage ? 'text-white' : 'text-foreground'
             }`}>
-              Bitte wählen Sie Ihren Bereich
+              Kassensystem
             </h2>
+            <p className={`text-lg md:text-xl font-display font-semibold text-center mb-8 uppercase tracking-[0.1em] ${
+              backgroundImage ? 'text-white/70' : 'text-muted-foreground'
+            }`}>
+              Bitte wählen Sie Ihren Bereich
+            </p>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* Bar Login */}
