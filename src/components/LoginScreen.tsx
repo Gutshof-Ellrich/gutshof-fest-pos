@@ -30,9 +30,9 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header */}
         <header className="py-8 px-6 text-center">
-          <h1 className={`text-5xl md:text-6xl font-normal mb-2 ${
+          <h1 className={`text-4xl md:text-5xl lg:text-6xl font-semibold mb-4 tracking-[0.15em] ${
             backgroundImage ? 'text-white' : 'text-primary'
-          }`} style={{ fontFamily: "'Great Vibes', cursive" }}>
+          }`} style={{ fontFamily: "'Cinzel', Georgia, 'Times New Roman', serif", fontVariant: 'small-caps' }}>
             Gutshof Ellrich
           </h1>
           <p className={`text-xl font-display ${
