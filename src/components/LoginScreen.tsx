@@ -1,5 +1,4 @@
 import { useAppStore, UserRole } from '@/store/useAppStore';
-import logoGutshof from '@/assets/logo-gutshof.png';
 import { Wine, UtensilsCrossed, Settings } from 'lucide-react';
 
 interface LoginScreenProps {
@@ -31,31 +30,24 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
       {/* Content Container */}
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header */}
-        <header className="pt-10 pb-6 px-6 flex flex-col items-center">
-          <img
-            src={logoGutshof}
-            alt="Logo Gutshof Ellrich"
-            className="w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 object-contain drop-shadow-lg"
-          />
-          <div className="mt-8 md:mt-10 w-full max-w-md">
-            <h1 className={`text-[clamp(1.8rem,5vw,3.75rem)] tracking-[0.04em] leading-relaxed text-center whitespace-nowrap ${
-              backgroundImage ? 'text-white' : 'text-primary'
-            }`} style={{ fontFamily: "Zapfino, 'Palace Script MT', 'Lucida Calligraphy', cursive", fontWeight: 700 }}>
-              Gutshof Ellrich
-            </h1>
-          </div>
+        <header className="pt-12 md:pt-16 pb-4 px-6 flex flex-col items-center">
+          <h1 className={`text-[clamp(1.8rem,5vw,3.75rem)] tracking-[0.04em] leading-relaxed text-center whitespace-nowrap ${
+            backgroundImage ? 'text-white' : 'text-primary'
+          }`} style={{ fontFamily: "Zapfino, 'Palace Script MT', 'Lucida Calligraphy', cursive", fontWeight: 700 }}>
+            Gutshof Ellrich
+          </h1>
+          <p className={`text-xl md:text-2xl font-display font-bold text-center mt-4 uppercase tracking-[0.12em] ${
+            backgroundImage ? 'text-white' : 'text-primary'
+          }`}>
+            Kassensystem
+          </p>
         </header>
 
         {/* Login Options */}
         <main className="flex-1 flex items-center justify-center px-6 pb-12">
           <div className="w-full max-w-4xl">
-            <h2 className={`text-2xl md:text-3xl font-display font-bold text-center mb-2 uppercase tracking-[0.12em] ${
-              backgroundImage ? 'text-white' : 'text-foreground'
-            }`}>
-              Kassensystem
-            </h2>
-            <p className={`text-lg md:text-xl font-display font-semibold text-center mb-8 uppercase tracking-[0.1em] ${
-              backgroundImage ? 'text-white/70' : 'text-muted-foreground'
+            <p className={`text-base md:text-lg font-display font-semibold text-center mb-8 ${
+              backgroundImage ? 'text-white/70' : 'text-foreground'
             }`}>
               Bitte wählen Sie Ihren Bereich
             </p>
