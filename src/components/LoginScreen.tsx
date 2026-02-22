@@ -30,15 +30,15 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header */}
         <header className="py-8 px-6 text-center">
-          <h1 className={`font-display text-4xl md:text-5xl font-bold mb-2 ${
+          <h1 className={`text-5xl md:text-6xl font-normal mb-2 ${
             backgroundImage ? 'text-white' : 'text-primary'
-          }`}>
+          }`} style={{ fontFamily: "'Great Vibes', cursive" }}>
             Gutshof Ellrich
           </h1>
           <p className={`text-xl font-display ${
             backgroundImage ? 'text-white/80' : 'text-muted-foreground'
           }`}>
-            Weinfest POS
+            Kassensystem
           </p>
         </header>
 
@@ -136,7 +136,7 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
         <footer className={`py-4 text-center text-sm ${
           backgroundImage ? 'text-white/60' : 'text-muted-foreground'
         }`}>
-          <p>© 2025 Gutshof Ellrich Weinfest</p>
+          <p>© 2025 Gutshof Ellrich</p>
         </footer>
       </div>
     </div>
