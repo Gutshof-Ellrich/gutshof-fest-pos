@@ -37,9 +37,9 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
             alt="Logo Gutshof Ellrich"
             className="w-28 h-28 md:w-36 md:h-36 lg:w-44 lg:h-44 object-contain mb-4 drop-shadow-lg"
           />
-          <h1 className={`text-5xl md:text-6xl lg:text-7xl mb-4 tracking-[0.18em] leading-tight ${
+          <h1 className={`text-4xl md:text-5xl lg:text-6xl mb-4 tracking-[0.04em] leading-snug ${
             backgroundImage ? 'text-white' : 'text-primary'
-          }`} style={{ fontFamily: "'Cinzel', Georgia, 'Times New Roman', serif", fontVariant: 'small-caps', fontWeight: 700 }}>
+          }`} style={{ fontFamily: "Zapfino, 'Palace Script MT', 'Lucida Calligraphy', cursive", fontWeight: 700 }}>
             Gutshof Ellrich
           </h1>
           <p className={`text-xl font-display ${
