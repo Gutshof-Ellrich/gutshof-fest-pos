@@ -6,7 +6,7 @@ import CartPanel from './CartPanel';
 import PaymentDialog from './PaymentDialog';
 import OpenTablesPanel from './OpenTablesPanel';
 import OrderHistoryDialog from './OrderHistoryDialog';
-import { printOrderForRole } from '@/services/cupsPrintService';
+import { printOrderForRole, printTogoOrder } from '@/services/cupsPrintService';
 import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ShoppingCart, Clock, Receipt } from 'lucide-react';
@@ -45,6 +45,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     tableTabs,
     orders,
     cupsPrinters,
+    getNextTogoNumber,
     addToCart,
     removeFromCart,
     updateCartQuantity,
@@ -109,6 +110,9 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     const depositSaldo = (deposit.newDeposits - deposit.returnedDeposits) * depositPerGlass;
     const grandTotal = itemsTotal + depositSaldo;
 
+    // Assign ToGo number only for paid ToGo orders
+    const togoNumber = (serviceType === 'togo' && payNow) ? getNextTogoNumber() : undefined;
+
     const order: Order = {
       id: `order-${Date.now()}`,
       items: [...cart],
@@ -125,6 +129,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
       tableId: serviceType === 'service' ? selectedTableId || undefined : undefined,
       tableName: serviceType === 'service' ? selectedTableName || undefined : undefined,
       isPaid: payNow,
+      togoNumber,
     };
 
     addOrder(order);
@@ -133,9 +138,13 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
       addToTableTab(selectedTableId, selectedTableName, order);
     }
     
-    // Print receipt to all assigned printers for this role
+    // Print: ToGo → customer + kitchen bon; Service → only assigned role
     if (payNow && order.items.length > 0) {
-      printOrderForRole(order, cupsPrinters, role);
+      if (serviceType === 'togo') {
+        printTogoOrder(order, cupsPrinters, role);
+      } else {
+        printOrderForRole(order, cupsPrinters, role);
+      }
     }
     
     clearCart();
@@ -149,10 +158,11 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
       : '';
 
     if (payNow) {
+      const togoInfo = serviceType === 'togo' && togoNumber !== undefined ? ` | ToGo-Nr: ${togoNumber}` : '';
       toast.success(
         `Bestellung ${serviceType === 'togo' ? 'TO GO' : 'SERVICE'}${tableInfo} abgeschlossen`,
         {
-          description: `${grandTotal.toFixed(2).replace('.', ',')} € - ${paymentMethod === 'cash' ? 'Bar' : 'Karte'}`,
+          description: `${grandTotal.toFixed(2).replace('.', ',')} € - ${paymentMethod === 'cash' ? 'Bar' : 'Karte'}${togoInfo}`,
         }
       );
     } else {

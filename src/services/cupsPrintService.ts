@@ -26,11 +26,27 @@ export function sanitizeText(text: string): string {
 }
 
 // ─── Bon builder ─────────────────────────────────────────────────
-export function buildOrderBon(order: Order): string {
+export type BonType = 'customer' | 'kitchen';
+
+export function buildOrderBon(order: Order, bonType: BonType = 'customer'): string {
   const lines: string[] = [];
   const ts = new Date(order.timestamp);
   const dateStr = ts.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const timeStr = ts.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+  // ToGo number (prominent)
+  if (order.serviceType === 'togo' && order.togoNumber !== undefined) {
+    lines.push('================================');
+    lines.push(`      TOGO-NR: ${order.togoNumber}`);
+    lines.push('================================');
+    lines.push('');
+  }
+
+  // Bon type label
+  if (bonType === 'kitchen') {
+    lines.push('*** KUECHENBON ***');
+    lines.push('');
+  }
 
   // Header
   lines.push(`Datum: ${dateStr}`);
@@ -52,15 +68,18 @@ export function buildOrderBon(order: Order): string {
     });
   }
 
-  // Deposit
-  if (order.depositTotal !== 0) {
+  // Deposit (only on customer bon)
+  if (bonType === 'customer' && order.depositTotal !== 0) {
     lines.push('');
     lines.push(`Pfand: ${order.depositTotal.toFixed(2)} EUR`);
   }
 
-  // Footer
-  lines.push('');
-  lines.push(`Gesamt: ${order.grandTotal.toFixed(2)} EUR`);
+  // Footer (only on customer bon)
+  if (bonType === 'customer') {
+    lines.push('');
+    lines.push(`Gesamt: ${order.grandTotal.toFixed(2)} EUR`);
+  }
+
   lines.push('');
 
   return sanitizeText(lines.join('\n'));
@@ -100,8 +119,9 @@ export async function printOrderForRole(
   order: Order,
   printers: CupsPrinter[],
   role: 'bar' | 'food' | 'combined',
+  bonType: BonType = 'customer',
 ): Promise<void> {
-  const text = buildOrderBon(order);
+  const text = buildOrderBon(order, bonType);
 
   const targets = printers.filter(
     (p) => p.isActive && p.assignedRoles.includes(role),
@@ -120,6 +140,38 @@ export async function printOrderForRole(
   if (failed > 0) {
     toast.error('Druck fehlgeschlagen', {
       description: `${failed} von ${targets.length} Drucker(n) nicht erreichbar.`,
+    });
+  }
+}
+
+// ─── Print ToGo order to both customer and kitchen ───────────────
+export async function printTogoOrder(
+  order: Order,
+  printers: CupsPrinter[],
+  role: 'bar' | 'food' | 'combined',
+): Promise<void> {
+  // Customer bon → bar/combined printers (Kasse)
+  await printOrderForRole(order, printers, role, 'customer');
+
+  // Kitchen bon → food printers (Küche)
+  const kitchenText = buildOrderBon(order, 'kitchen');
+  const kitchenTargets = printers.filter(
+    (p) => p.isActive && p.assignedRoles.includes('food'),
+  );
+
+  if (kitchenTargets.length === 0) {
+    console.warn('[CupsPrint] Keine aktiven Kuechendrucker gefunden');
+    return;
+  }
+
+  const results = await Promise.all(
+    kitchenTargets.map((p) => sendPrintJob(p, kitchenText)),
+  );
+
+  const failed = results.filter((r) => !r).length;
+  if (failed > 0) {
+    toast.error('Kuechendruck fehlgeschlagen', {
+      description: `${failed} von ${kitchenTargets.length} Kuechendrucker(n) nicht erreichbar.`,
     });
   }
 }

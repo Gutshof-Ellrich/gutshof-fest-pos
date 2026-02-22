@@ -52,6 +52,7 @@ export interface Order {
   tableId?: string;
   tableName?: string;
   isPaid: boolean;
+  togoNumber?: number;
 }
 
 export interface TableTab {
@@ -145,6 +146,10 @@ interface AppState {
   // Background Image
   backgroundImage: string | null;
   setBackgroundImage: (imageData: string | null) => void;
+
+  // ToGo Counter
+  togoCounter: number;
+  getNextTogoNumber: () => number;
 }
 
 // Initial demo data
@@ -368,6 +373,15 @@ export const useAppStore = create<AppState>()(
       // Background Image
       backgroundImage: null,
       setBackgroundImage: (imageData) => set({ backgroundImage: imageData }),
+
+      // ToGo Counter
+      togoCounter: 0,
+      getNextTogoNumber: () => {
+        const current = get().togoCounter;
+        const next = (current + 1) % 1001;
+        set({ togoCounter: next });
+        return next;
+      },
     }),
     {
       name: 'gutshof-weinfest-pos',
@@ -380,6 +394,7 @@ export const useAppStore = create<AppState>()(
         tableTabs: state.tableTabs,
         depositPerGlass: state.depositPerGlass,
         backgroundImage: state.backgroundImage,
+        togoCounter: state.togoCounter,
       }),
     }
   )
