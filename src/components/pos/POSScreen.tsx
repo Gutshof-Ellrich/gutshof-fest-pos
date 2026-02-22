@@ -96,7 +96,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     
     const activeTables = tables.filter(t => t.isActive);
     if (serviceType === 'service' && activeTables.length > 0 && !selectedTableId) {
-      toast.error('Bitte waehlen Sie einen Tisch aus');
+      toast.error('Bitte wählen Sie einen Tisch aus');
       return;
     }
     
@@ -152,20 +152,20 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
       toast.success(
         `Bestellung ${serviceType === 'togo' ? 'TO GO' : 'SERVICE'}${tableInfo} abgeschlossen`,
         {
-          description: `${grandTotal.toFixed(2).replace('.', ',')} EUR - ${paymentMethod === 'cash' ? 'Bar' : 'Karte'}`,
+          description: `${grandTotal.toFixed(2).replace('.', ',')} € - ${paymentMethod === 'cash' ? 'Bar' : 'Karte'}`,
         }
       );
     } else {
       toast.success(
         `Bestellung auf Tisch ${selectedTableName} gebucht`,
         {
-          description: `${grandTotal.toFixed(2).replace('.', ',')} EUR - Zahlung spaeter`,
+          description: `${grandTotal.toFixed(2).replace('.', ',')} € - Zahlung später`,
         }
       );
     }
   };
 
-  const roleTitle = role === 'bar' ? 'Getraenke' : role === 'food' ? 'Speisen' : 'Komplett';
+  const roleTitle = role === 'bar' ? 'Getränke' : role === 'food' ? 'Speisen' : 'Komplett';
   const roleColor = role === 'bar' ? 'text-primary' : role === 'food' ? 'text-success' : 'text-violet-600';
   
   const openTablesCount = tableTabs.length;

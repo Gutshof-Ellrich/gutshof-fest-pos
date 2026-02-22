@@ -5,12 +5,13 @@ import TableManagement from './TableManagement';
 import PrinterManagement from './PrinterManagement';
 import DataSyncManagement from './DataSyncManagement';
 import BackgroundImageUpload from './BackgroundImageUpload';
+import { restoreUmlauts } from '@/lib/searchUtils';
 
 interface AdminScreenProps {
   onLogout: () => void;
 }
 
-type AdminTab = 'products' | 'categories' | 'tables' | 'deposit' | 'printers' | 'statistics' | 'sync' | 'design';
+type AdminTab = 'products' | 'categories' | 'tables' | 'deposit' | 'printers' | 'statistics' | 'sync' | 'design' | 'migration';
 
 const AdminScreen = ({ onLogout }: AdminScreenProps) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('statistics');
@@ -60,7 +61,35 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
     { id: 'printers', label: 'Drucker' },
     { id: 'sync', label: 'Synchronisation' },
     { id: 'design', label: 'Design' },
+    { id: 'migration', label: 'Migration' },
   ];
+
+  const handleMigrateUmlauts = () => {
+    let changedCategories = 0;
+    let changedProducts = 0;
+
+    categories.forEach((cat) => {
+      const newName = restoreUmlauts(cat.name);
+      if (newName !== cat.name) {
+        updateCategory(cat.id, { name: newName });
+        changedCategories++;
+      }
+    });
+
+    products.forEach((prod) => {
+      const newName = restoreUmlauts(prod.name);
+      if (newName !== prod.name) {
+        updateProduct(prod.id, { name: newName });
+        changedProducts++;
+      }
+    });
+
+    if (changedCategories === 0 && changedProducts === 0) {
+      toast.info('Keine Änderungen nötig – alle Namen enthalten bereits korrekte Umlaute.');
+    } else {
+      toast.success(`Migration abgeschlossen: ${changedCategories} Kategorien und ${changedProducts} Produkte aktualisiert.`);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -561,6 +590,68 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
         {activeTab === 'sync' && <DataSyncManagement />}
 
         {activeTab === 'design' && <BackgroundImageUpload />}
+
+        {activeTab === 'migration' && (
+          <div className="space-y-6 animate-fade-in">
+            <h2 className="font-display text-2xl font-bold text-foreground">Umlaut-Migration</h2>
+            
+            <div className="bg-card rounded-xl border border-border p-6 max-w-2xl space-y-4">
+              <p className="text-muted-foreground">
+                Diese Funktion konvertiert bestehende Namen von ASCII-Schreibweise (z.B. <code className="bg-muted px-1 rounded">Kaese</code>, <code className="bg-muted px-1 rounded">Gemuese</code>) 
+                zu korrekten deutschen Umlauten (<code className="bg-muted px-1 rounded">Käse</code>, <code className="bg-muted px-1 rounded">Gemüse</code>).
+              </p>
+              <p className="text-sm text-muted-foreground">
+                IDs und Referenzen bleiben unverändert. Nur die sichtbaren Namensfelder werden angepasst.
+              </p>
+
+              <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                <h4 className="font-semibold text-sm">Vorschau – aktuelle Namen:</h4>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Kategorien:</span>
+                    <ul className="mt-1 space-y-0.5">
+                      {categories.map(c => (
+                        <li key={c.id} className="flex gap-2">
+                          <span>{c.name}</span>
+                          {restoreUmlauts(c.name) !== c.name && (
+                            <span className="text-primary">→ {restoreUmlauts(c.name)}</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Produkte (mit Änderungen):</span>
+                    <ul className="mt-1 space-y-0.5">
+                      {products
+                        .filter(p => restoreUmlauts(p.name) !== p.name)
+                        .map(p => (
+                          <li key={p.id} className="flex gap-2">
+                            <span>{p.name}</span>
+                            <span className="text-primary">→ {restoreUmlauts(p.name)}</span>
+                          </li>
+                        ))}
+                      {products.filter(p => restoreUmlauts(p.name) !== p.name).length === 0 && (
+                        <li className="text-muted-foreground italic">Keine Änderungen nötig</li>
+                      )}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  if (confirm('Umlaut-Migration jetzt durchführen? Namen werden automatisch korrigiert.')) {
+                    handleMigrateUmlauts();
+                  }
+                }}
+                className="touch-btn-primary"
+              >
+                Migration durchführen
+              </button>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
