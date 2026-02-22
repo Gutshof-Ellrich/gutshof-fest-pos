@@ -43,9 +43,9 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
             }`} style={{ fontFamily: "Zapfino, 'Palace Script MT', 'Lucida Calligraphy', cursive", fontWeight: 700 }}>
               Gutshof Ellrich
             </h1>
-            <p className={`text-sm md:text-base tracking-[0.15em] uppercase mt-2 text-right ${
-              backgroundImage ? 'text-white/70' : 'text-muted-foreground'
-            }`} style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>
+            <p className={`text-2xl font-display font-bold tracking-[0.08em] mt-6 text-center ${
+              backgroundImage ? 'text-white/80' : 'text-muted-foreground'
+            }`}>
               Kassensystem
             </p>
           </div>
