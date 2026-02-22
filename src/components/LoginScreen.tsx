@@ -1,4 +1,5 @@
 import { useAppStore, UserRole } from '@/store/useAppStore';
+import logoGutshof from '@/assets/logo-gutshof.png';
 
 interface LoginScreenProps {
   onLogin: (role: UserRole) => void;
@@ -29,7 +30,12 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
       {/* Content Container */}
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header */}
-        <header className="py-8 px-6 text-center">
+        <header className="py-8 px-6 text-center flex flex-col items-center">
+          <img
+            src={logoGutshof}
+            alt="Logo Gutshof Ellrich"
+            className="w-28 h-28 md:w-36 md:h-36 lg:w-44 lg:h-44 object-contain mb-4 drop-shadow-lg"
+          />
           <h1 className={`text-5xl md:text-6xl lg:text-7xl mb-4 tracking-[0.18em] leading-tight ${
             backgroundImage ? 'text-white' : 'text-primary'
           }`} style={{ fontFamily: "'Cinzel', Georgia, 'Times New Roman', serif", fontVariant: 'small-caps', fontWeight: 700 }}>
