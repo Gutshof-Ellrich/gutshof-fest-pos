@@ -90,7 +90,7 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
                   </div>
                   <h3 className="text-2xl font-display font-bold">Essen</h3>
                   <p className="text-white/80 text-sm">
-                    Speisen & Grill
+                    Speisen
                   </p>
                 </div>
                 <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors rounded-2xl" />
