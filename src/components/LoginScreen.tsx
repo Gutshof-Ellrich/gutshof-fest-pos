@@ -36,7 +36,7 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
           }`} style={{ fontFamily: "Zapfino, 'Palace Script MT', 'Lucida Calligraphy', cursive", fontWeight: 700 }}>
             Gutshof Ellrich
           </h1>
-          <p className={`text-xl md:text-2xl font-display font-bold text-center mt-4 uppercase tracking-[0.12em] ${
+          <p className={`text-xl md:text-2xl font-display font-bold text-center mt-12 md:mt-16 uppercase tracking-[0.12em] ${
             backgroundImage ? 'text-white' : 'text-primary'
           }`}>
             Kassensystem
@@ -46,7 +46,7 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
         {/* Login Options */}
         <main className="flex-1 flex items-center justify-center px-6 pb-12">
           <div className="w-full max-w-4xl">
-            <p className={`text-base md:text-lg font-display font-semibold text-center mb-8 ${
+            <p className={`text-base md:text-lg font-display font-semibold text-center mt-1 mb-8 ${
               backgroundImage ? 'text-white/70' : 'text-foreground'
             }`}>
               Bitte wählen Sie Ihren Bereich
