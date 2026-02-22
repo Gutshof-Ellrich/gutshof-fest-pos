@@ -31,25 +31,23 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
       {/* Content Container */}
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header */}
-        <header className="pt-10 pb-6 px-6 flex justify-center">
-          <div className="flex flex-col items-center md:flex-row md:items-center md:gap-8 gap-3">
-            <img
-              src={logoGutshof}
-              alt="Logo Gutshof Ellrich"
-              className="w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 object-contain drop-shadow-lg flex-shrink-0"
-            />
-            <div className="text-center md:text-left">
-              <h1 className={`text-3xl md:text-4xl lg:text-5xl tracking-[0.04em] leading-relaxed ${
-                backgroundImage ? 'text-white' : 'text-primary'
-              }`} style={{ fontFamily: "Zapfino, 'Palace Script MT', 'Lucida Calligraphy', cursive", fontWeight: 700 }}>
-                Gutshof Ellrich
-              </h1>
-              <p className={`text-sm md:text-base tracking-[0.15em] uppercase mt-1 md:mt-2 ${
-                backgroundImage ? 'text-white/70' : 'text-muted-foreground'
-              }`} style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>
-                Kassensystem
-              </p>
-            </div>
+        <header className="pt-10 pb-6 px-6 flex flex-col items-center">
+          <img
+            src={logoGutshof}
+            alt="Logo Gutshof Ellrich"
+            className="w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 object-contain drop-shadow-lg"
+          />
+          <div className="mt-8 md:mt-10 w-full max-w-md">
+            <h1 className={`text-4xl md:text-5xl lg:text-6xl tracking-[0.04em] leading-relaxed text-center ${
+              backgroundImage ? 'text-white' : 'text-primary'
+            }`} style={{ fontFamily: "Zapfino, 'Palace Script MT', 'Lucida Calligraphy', cursive", fontWeight: 700 }}>
+              Gutshof Ellrich
+            </h1>
+            <p className={`text-sm md:text-base tracking-[0.15em] uppercase mt-2 text-right ${
+              backgroundImage ? 'text-white/70' : 'text-muted-foreground'
+            }`} style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>
+              Kassensystem
+            </p>
           </div>
         </header>
 
