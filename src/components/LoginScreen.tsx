@@ -38,7 +38,7 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
             className="w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 object-contain drop-shadow-lg"
           />
           <div className="mt-8 md:mt-10 w-full max-w-md">
-            <h1 className={`text-4xl md:text-5xl lg:text-6xl tracking-[0.04em] leading-relaxed text-center ${
+            <h1 className={`text-[clamp(1.8rem,5vw,3.75rem)] tracking-[0.04em] leading-relaxed text-center whitespace-nowrap ${
               backgroundImage ? 'text-white' : 'text-primary'
             }`} style={{ fontFamily: "Zapfino, 'Palace Script MT', 'Lucida Calligraphy', cursive", fontWeight: 700 }}>
               Gutshof Ellrich
