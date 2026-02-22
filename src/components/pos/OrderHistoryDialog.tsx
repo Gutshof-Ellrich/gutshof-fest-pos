@@ -216,13 +216,19 @@ const OrderHistoryDialog = ({ isOpen, onClose, role }: OrderHistoryDialogProps) 
                                     Tisch {order.tableName}
                                   </span>
                                 )}
-                                <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                  order.serviceType === 'togo' 
-                                    ? 'bg-amber-100 text-amber-800' 
-                                    : 'bg-blue-100 text-blue-800'
-                                }`}>
-                                  {order.serviceType === 'togo' ? 'TO GO' : 'SERVICE'}
-                                </span>
+                                {order.serviceType === 'togo' && order.togoNumber !== undefined ? (
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold">
+                                    TOGO {order.togoNumber}
+                                  </span>
+                                ) : (
+                                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                    order.serviceType === 'togo' 
+                                      ? 'bg-amber-100 text-amber-800' 
+                                      : 'bg-blue-100 text-blue-800'
+                                  }`}>
+                                    {order.serviceType === 'togo' ? 'TO GO' : 'SERVICE'}
+                                  </span>
+                                )}
                               </div>
                               <div className="flex items-center gap-2">
                                 {order.paymentMethod === 'cash' ? (
@@ -301,7 +307,11 @@ const OrderHistoryDialog = ({ isOpen, onClose, role }: OrderHistoryDialogProps) 
                 <div className="bg-muted/50 rounded-lg p-3">
                   <div className="text-muted-foreground mb-1">Typ</div>
                   <div className="font-semibold">
-                    {selectedOrder.serviceType === 'togo' ? 'TO GO' : 'SERVICE'}
+                    {selectedOrder.serviceType === 'togo' 
+                      ? (selectedOrder.togoNumber !== undefined 
+                          ? `TO GO #${selectedOrder.togoNumber}` 
+                          : 'TO GO') 
+                      : 'SERVICE'}
                   </div>
                 </div>
                 <div className="bg-muted/50 rounded-lg p-3">
