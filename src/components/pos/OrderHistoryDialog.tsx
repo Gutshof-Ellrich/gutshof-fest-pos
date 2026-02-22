@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useAppStore, Order } from '@/store/useAppStore';
 import { Clock, Search, Receipt, Banknote, CreditCard, Trash2 } from 'lucide-react';
+import { fuzzyIncludes } from '@/lib/searchUtils';
 import {
   Dialog,
   DialogContent,
@@ -57,22 +58,22 @@ const OrderHistoryDialog = ({ isOpen, onClose, role }: OrderHistoryDialogProps) 
       );
     }
 
-    const query = searchQuery.toLowerCase();
+    const query = searchQuery.trim();
     return roleOrders.filter(order => {
-      // Search by table name
-      if (order.tableName?.toLowerCase().includes(query)) return true;
+      // Search by table name (umlaut-tolerant)
+      if (order.tableName && fuzzyIncludes(order.tableName, query)) return true;
       
       // Search by time
       const timeStr = formatTime(new Date(order.timestamp));
       if (timeStr.includes(query)) return true;
       
-      // Search by product names
+      // Search by product names (umlaut-tolerant)
       if (order.items.some(item => 
-        item.product.name.toLowerCase().includes(query)
+        fuzzyIncludes(item.product.name, query)
       )) return true;
       
       // Search by order ID
-      if (order.id.toLowerCase().includes(query)) return true;
+      if (order.id.toLowerCase().includes(query.toLowerCase())) return true;
       
       // Search by amount
       const amountStr = order.grandTotal.toFixed(2).replace('.', ',');
