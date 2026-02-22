@@ -31,16 +31,12 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
       {/* Content Container */}
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header */}
-        {/* Header Image with overlaid title */}
-        <div className="relative w-full h-48 md:h-64 overflow-hidden">
-          <img src={headerImage} alt="Gutshof Ellrich Panorama" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-black/30" />
-          <h1 className="absolute inset-0 flex items-center justify-center text-[clamp(1.8rem,5vw,3.75rem)] tracking-[0.04em] leading-relaxed text-center whitespace-nowrap text-white drop-shadow-lg" style={{ fontFamily: "Zapfino, 'Palace Script MT', 'Lucida Calligraphy', cursive", fontWeight: 700 }}>
+        <header className="pt-12 md:pt-16 pb-4 px-6 flex flex-col items-center">
+          <h1 className={`text-[clamp(1.8rem,5vw,3.75rem)] tracking-[0.04em] leading-relaxed text-center whitespace-nowrap ${
+            backgroundImage ? 'text-white' : 'text-primary'
+          }`} style={{ fontFamily: "Zapfino, 'Palace Script MT', 'Lucida Calligraphy', cursive", fontWeight: 700 }}>
             Gutshof Ellrich
           </h1>
-        </div>
-
-        <header className="pt-8 md:pt-12 pb-4 px-6 flex flex-col items-center">
           <p className={`text-xl md:text-2xl font-display font-bold text-center mt-12 md:mt-16 uppercase tracking-[0.12em] ${
             backgroundImage ? 'text-white' : 'text-primary'
           }`}>
@@ -129,6 +125,11 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
             </div>
           </div>
         </main>
+
+        {/* Footer Image */}
+        <div className="w-full h-32 md:h-48 overflow-hidden">
+          <img src={headerImage} alt="Gutshof Ellrich Panorama" className="w-full h-full object-cover" />
+        </div>
 
         {/* Footer */}
         <footer className={`py-4 text-center text-sm ${
