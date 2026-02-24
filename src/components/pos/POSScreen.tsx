@@ -6,7 +6,8 @@ import CartPanel from './CartPanel';
 import PaymentDialog from './PaymentDialog';
 import OpenTablesPanel from './OpenTablesPanel';
 import OrderHistoryDialog from './OrderHistoryDialog';
-import { printOrderForRole, printTogoOrder } from '@/services/cupsPrintService';
+import { printOrderToMatchingPrinters, fetchPrinters } from '@/services/printService';
+import type { LanPrinter } from '@/types/printer';
 import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ShoppingCart, Clock, Receipt } from 'lucide-react';
@@ -28,11 +29,17 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
   const isMobile = useIsMobile();
 
   const { setServiceType } = useAppStore();
+  const [lanPrinters, setLanPrinters] = useState<LanPrinter[]>([]);
 
   useEffect(() => {
     const defaultServiceType = role === 'bar' ? 'togo' : 'service';
     setServiceType(defaultServiceType);
   }, [role, setServiceType]);
+
+  // Load printers from backend on mount
+  useEffect(() => {
+    fetchPrinters().then(setLanPrinters).catch(() => console.warn('[Print] Print-Service offline'));
+  }, []);
 
   const {
     categories,
@@ -44,7 +51,6 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     tables,
     tableTabs,
     orders,
-    cupsPrinters,
     getNextTogoNumber,
     addToCart,
     removeFromCart,
@@ -138,13 +144,18 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
       addToTableTab(selectedTableId, selectedTableName, order);
     }
     
-    // Print: ToGo → customer + kitchen bon; Service → only assigned role
-    if (payNow && order.items.length > 0) {
-      if (serviceType === 'togo') {
-        printTogoOrder(order, cupsPrinters, role);
-      } else {
-        printOrderForRole(order, cupsPrinters, role);
-      }
+    // Print to all matching LAN printers
+    if (order.items.length > 0) {
+      printOrderToMatchingPrinters(order, lanPrinters, role).then(({ failed }) => {
+        failed.forEach((name) => {
+          toast.error(`Druck fehlgeschlagen: ${name}`, {
+            action: {
+              label: 'Erneut drucken',
+              onClick: () => printOrderToMatchingPrinters(order, lanPrinters, role),
+            },
+          });
+        });
+      });
     }
     
     clearCart();
