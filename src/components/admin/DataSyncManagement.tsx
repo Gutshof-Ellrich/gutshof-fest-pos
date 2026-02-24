@@ -16,14 +16,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import type { CupsPrinter } from '@/services/cupsPrintService';
+
 
 interface ExportData {
   version: string;
   exportedAt: string;
   categories: ReturnType<typeof useAppStore.getState>['categories'];
   products: ReturnType<typeof useAppStore.getState>['products'];
-  cupsPrinters: CupsPrinter[];
   tables: ReturnType<typeof useAppStore.getState>['tables'];
   depositPerGlass: number;
 }
@@ -32,12 +31,10 @@ const DataSyncManagement = () => {
   const { 
     categories, 
     products, 
-    cupsPrinters, 
     tables, 
     depositPerGlass,
     setCategories,
     setProducts,
-    setCupsPrinters,
     setTables,
     setDepositPerGlass,
   } = useAppStore();
@@ -51,7 +48,6 @@ const DataSyncManagement = () => {
       exportedAt: new Date().toISOString(),
       categories,
       products,
-      cupsPrinters,
       tables,
       depositPerGlass,
     };
@@ -85,7 +81,6 @@ const DataSyncManagement = () => {
 
         if (data.categories) setCategories(data.categories);
         if (data.products) setProducts(data.products);
-        if (data.cupsPrinters) setCupsPrinters(data.cupsPrinters);
         if (data.tables) setTables(data.tables);
         if (data.depositPerGlass) setDepositPerGlass(data.depositPerGlass);
 
@@ -138,7 +133,7 @@ const DataSyncManagement = () => {
               </div>
               <div className="flex flex-col">
                 <span className="text-muted-foreground">Drucker</span>
-                <span className="text-lg font-semibold">{cupsPrinters.length}</span>
+                <span className="text-lg font-semibold text-muted-foreground">via Print-Service</span>
               </div>
               <div className="flex flex-col">
                 <span className="text-muted-foreground">Tische</span>

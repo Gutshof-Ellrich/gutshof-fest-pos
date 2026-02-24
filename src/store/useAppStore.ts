@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { CupsPrinter } from '@/services/cupsPrintService';
 
 // Types
 export type UserRole = 'bar' | 'food' | 'combined' | 'admin' | null;
@@ -114,12 +113,7 @@ interface AppState {
   deleteOrder: (orderId: string) => void;
   clearOrders: () => void;
 
-  // CUPS Printers
-  cupsPrinters: CupsPrinter[];
-  setCupsPrinters: (printers: CupsPrinter[]) => void;
-  addCupsPrinter: (printer: CupsPrinter) => void;
-  updateCupsPrinter: (id: string, updates: Partial<CupsPrinter>) => void;
-  deleteCupsPrinter: (id: string) => void;
+  // (Printers are now managed via backend API – no local state needed)
 
   // Tables
   tables: Table[];
@@ -287,16 +281,7 @@ export const useAppStore = create<AppState>()(
       })),
       clearOrders: () => set({ orders: [] }),
 
-      // CUPS Printers
-      cupsPrinters: [],
-      setCupsPrinters: (printers) => set({ cupsPrinters: printers }),
-      addCupsPrinter: (printer) => set((state) => ({ cupsPrinters: [...state.cupsPrinters, printer] })),
-      updateCupsPrinter: (id, updates) => set((state) => ({
-        cupsPrinters: state.cupsPrinters.map((p) => p.id === id ? { ...p, ...updates } : p)
-      })),
-      deleteCupsPrinter: (id) => set((state) => ({
-        cupsPrinters: state.cupsPrinters.filter((p) => p.id !== id)
-      })),
+      // (Printers managed via backend API)
 
       // Tables
       tables: [],
@@ -389,7 +374,6 @@ export const useAppStore = create<AppState>()(
         categories: state.categories,
         products: state.products,
         orders: state.orders,
-        cupsPrinters: state.cupsPrinters,
         tables: state.tables,
         tableTabs: state.tableTabs,
         depositPerGlass: state.depositPerGlass,
