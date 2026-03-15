@@ -22,6 +22,8 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
     products,
     orders,
     depositPerGlass,
+    adminPin,
+    setAdminPin,
     addCategory,
     updateCategory,
     deleteCategory,
@@ -31,6 +33,9 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
     setDepositPerGlass,
     clearOrders,
   } = useAppStore();
+
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
 
   // Calculate statistics
   const totalRevenue = orders.reduce((sum, order) => sum + order.grandTotal, 0);
