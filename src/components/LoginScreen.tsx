@@ -53,7 +53,7 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
               Bitte wählen Sie Ihren Bereich
             </p>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Bar Login */}
               <button
                 onClick={() => onLogin('bar')}
@@ -105,22 +105,20 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
                 </div>
                 <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors rounded-2xl" />
               </button>
+            </div>
 
-              {/* Admin Login */}
+            {/* Admin - separated, subtle */}
+            <div className="mt-10 flex justify-center">
               <button
                 onClick={() => onLogin('admin')}
-                className="login-card login-card-admin group"
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  backgroundImage
+                    ? 'text-white/50 hover:text-white/80 hover:bg-white/10 border border-white/15 hover:border-white/30'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted border border-border'
+                }`}
               >
-                <div className="space-y-4">
-                  <div className="w-20 h-20 mx-auto rounded-full bg-white/20 flex items-center justify-center">
-                    <Settings className="w-10 h-10" />
-                  </div>
-                  <h3 className="text-2xl font-display font-bold">Admin</h3>
-                  <p className="text-white/80 text-sm">
-                    Verwaltung & Statistiken
-                  </p>
-                </div>
-                <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors rounded-2xl" />
+                <Settings className="w-4 h-4" />
+                Administration
               </button>
             </div>
           </div>
