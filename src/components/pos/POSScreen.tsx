@@ -361,6 +361,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
         serviceType={serviceType}
         tableName={selectedTableName}
         allowPayLater={serviceType === 'service' && !!selectedTableId}
+        cardPaymentPending={cardPaymentPending}
       />
 
       <OpenTablesPanel
