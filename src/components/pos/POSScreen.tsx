@@ -8,7 +8,6 @@ import OpenTablesPanel from './OpenTablesPanel';
 import OrderHistoryDialog from './OrderHistoryDialog';
 import { printOrderToMatchingPrinters, fetchPrinters } from '@/services/printService';
 import type { LanPrinter } from '@/types/printer';
-import type { LanPrinter } from '@/types/printer';
 import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ShoppingCart, Clock, Receipt } from 'lucide-react';
