@@ -11,6 +11,7 @@ interface PaymentDialogProps {
   serviceType: ServiceType;
   tableName?: string | null;
   allowPayLater?: boolean;
+  cardPaymentPending?: boolean;
 }
 
 const PaymentDialog = ({
@@ -23,6 +24,7 @@ const PaymentDialog = ({
   serviceType,
   tableName,
   allowPayLater = false,
+  cardPaymentPending = false,
 }: PaymentDialogProps) => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [amountPaid, setAmountPaid] = useState<string>('');
@@ -213,7 +215,14 @@ const PaymentDialog = ({
 
             {paymentMethod === 'card' && (
               <div className="p-6 text-center text-muted-foreground animate-fade-in">
-                <p className="text-lg">Bitte Kartenzahlung am Terminal durchführen</p>
+                {cardPaymentPending ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                    <p className="text-lg font-medium text-foreground">Sende Betrag an Kartenterminal...</p>
+                  </div>
+                ) : (
+                  <p className="text-lg">Bitte Kartenzahlung am Terminal durchführen</p>
+                )}
               </div>
             )}
           </div>
@@ -229,7 +238,7 @@ const PaymentDialog = ({
           </button>
           <button
             onClick={handleConfirm}
-            disabled={payNow && paymentMethod === 'cash' && paidAmount > 0 && paidAmount < grandTotal}
+            disabled={(payNow && paymentMethod === 'cash' && paidAmount > 0 && paidAmount < grandTotal) || cardPaymentPending}
             className={`flex-1 disabled:opacity-50 ${
               payNow ? 'touch-btn-success' : 'bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors'
             }`}

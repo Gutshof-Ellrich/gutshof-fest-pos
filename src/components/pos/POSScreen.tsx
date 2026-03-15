@@ -7,6 +7,7 @@ import PaymentDialog from './PaymentDialog';
 import OpenTablesPanel from './OpenTablesPanel';
 import OrderHistoryDialog from './OrderHistoryDialog';
 import { printOrderToMatchingPrinters, fetchPrinters } from '@/services/printService';
+import { startSumupPayment } from '@/services/sumupService';
 import type { LanPrinter } from '@/types/printer';
 import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -23,6 +24,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
   const [showPayment, setShowPayment] = useState(false);
   const [showOpenTables, setShowOpenTables] = useState(false);
   const [showOrderHistory, setShowOrderHistory] = useState(false);
+  const [cardPaymentPending, setCardPaymentPending] = useState(false);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [selectedTableName, setSelectedTableName] = useState<string | null>(null);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
@@ -115,6 +117,20 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     const itemsTotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
     const depositSaldo = (deposit.newDeposits - deposit.returnedDeposits) * depositPerGlass;
     const grandTotal = itemsTotal + depositSaldo;
+
+    // SumUp card terminal integration
+    if (payNow && paymentMethod === 'card') {
+      const orderId = `order-${Date.now()}`;
+      setCardPaymentPending(true);
+      try {
+        await startSumupPayment(grandTotal, orderId);
+      } catch {
+        setCardPaymentPending(false);
+        toast.error('Kartenzahlung konnte nicht gestartet werden.');
+        return;
+      }
+      setCardPaymentPending(false);
+    }
 
     // Assign ToGo number only for paid ToGo orders
     const togoNumber = (serviceType === 'togo' && payNow) ? getNextTogoNumber() : undefined;
@@ -345,6 +361,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
         serviceType={serviceType}
         tableName={selectedTableName}
         allowPayLater={serviceType === 'service' && !!selectedTableId}
+        cardPaymentPending={cardPaymentPending}
       />
 
       <OpenTablesPanel
