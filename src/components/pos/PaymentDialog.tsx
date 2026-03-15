@@ -24,6 +24,7 @@ const PaymentDialog = ({
   serviceType,
   tableName,
   allowPayLater = false,
+  cardPaymentPending = false,
 }: PaymentDialogProps) => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [amountPaid, setAmountPaid] = useState<string>('');
