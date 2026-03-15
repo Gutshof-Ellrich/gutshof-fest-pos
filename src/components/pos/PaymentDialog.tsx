@@ -1,5 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { PaymentMethod, ServiceType, CartItem, DepositInfo } from '@/store/useAppStore';
+import { startSumupPayment, pollSumupStatus } from '@/services/sumupService';
+import { toast } from 'sonner';
+
+type CardPaymentState = 'idle' | 'starting' | 'waiting' | 'success' | 'error' | 'cancelled';
 
 interface PaymentDialogProps {
   isOpen: boolean;
@@ -11,8 +15,10 @@ interface PaymentDialogProps {
   serviceType: ServiceType;
   tableName?: string | null;
   allowPayLater?: boolean;
-  cardPaymentPending?: boolean;
 }
+
+const POLL_INTERVAL = 2000;
+const MAX_POLL_ATTEMPTS = 90; // 3 minutes
 
 const PaymentDialog = ({
   isOpen,
@@ -24,40 +30,217 @@ const PaymentDialog = ({
   serviceType,
   tableName,
   allowPayLater = false,
-  cardPaymentPending = false,
 }: PaymentDialogProps) => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [amountPaid, setAmountPaid] = useState<string>('');
   const [payNow, setPayNow] = useState(true);
+  const [cardState, setCardState] = useState<CardPaymentState>('idle');
+  const [cardOrderId, setCardOrderId] = useState<string>('');
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollCountRef = useRef(0);
 
-  if (!isOpen) return null;
-
-  const itemsTotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const itemsTotal = isOpen ? items.reduce((sum, item) => sum + item.product.price * item.quantity, 0) : 0;
   const depositNew = deposit.newDeposits * depositPerGlass;
   const depositReturn = deposit.returnedDeposits * depositPerGlass;
   const depositSaldo = depositNew - depositReturn;
   const grandTotal = itemsTotal + depositSaldo;
-  
+
+  const stopPolling = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+    pollCountRef.current = 0;
+  }, []);
+
+  const startPolling = useCallback((orderId: string) => {
+    stopPolling();
+    pollCountRef.current = 0;
+
+    pollingRef.current = setInterval(async () => {
+      pollCountRef.current++;
+      if (pollCountRef.current > MAX_POLL_ATTEMPTS) {
+        stopPolling();
+        setCardState('error');
+        toast.error('Zeitüberschreitung bei Kartenzahlung.');
+        return;
+      }
+      try {
+        const status = await pollSumupStatus(orderId);
+        if (status === 'success') {
+          stopPolling();
+          setCardState('success');
+          toast.success('Kartenzahlung erfolgreich.');
+        } else if (status === 'error') {
+          stopPolling();
+          setCardState('error');
+          toast.error('Kartenzahlung fehlgeschlagen.');
+        } else if (status === 'cancelled') {
+          stopPolling();
+          setCardState('cancelled');
+          toast.error('Kartenzahlung wurde abgebrochen.');
+        }
+        // 'pending' → keep polling
+      } catch (err) {
+        console.error('SumUp status poll error:', err);
+        // Don't stop polling on network blips, let timeout handle it
+      }
+    }, POLL_INTERVAL);
+  }, [stopPolling]);
+
+  // Cleanup polling on unmount or dialog close
+  useEffect(() => {
+    if (!isOpen) {
+      stopPolling();
+      setCardState('idle');
+      setCardOrderId('');
+    }
+    return () => stopPolling();
+  }, [isOpen, stopPolling]);
+
+  if (!isOpen) return null;
+
   const paidAmount = parseFloat(amountPaid) || 0;
   const change = paidAmount - grandTotal;
-
   const quickAmounts = [5, 10, 20, 50];
+
+  const handleSelectCard = async () => {
+    setPaymentMethod('card');
+    setCardState('starting');
+
+    const orderId = `order-${Date.now()}`;
+    setCardOrderId(orderId);
+
+    try {
+      await startSumupPayment(grandTotal, orderId);
+      setCardState('waiting');
+      startPolling(orderId);
+    } catch (error) {
+      console.error('SumUp payment error:', error);
+      setCardState('error');
+      toast.error('Kartenzahlung konnte nicht gestartet werden.', {
+        description: 'Bitte Verbindung zum Kassensystem prüfen.',
+      });
+    }
+  };
+
+  const handleSelectCash = () => {
+    stopPolling();
+    setCardState('idle');
+    setPaymentMethod('cash');
+  };
+
+  const handleRetryCard = () => {
+    handleSelectCard();
+  };
 
   const handleConfirm = () => {
     if (payNow && paymentMethod === 'cash' && paidAmount < grandTotal) {
+      return;
+    }
+    if (payNow && paymentMethod === 'card' && cardState !== 'success') {
       return;
     }
     onConfirm(paymentMethod, payNow, payNow && paymentMethod === 'cash' ? paidAmount : undefined);
     setAmountPaid('');
     setPaymentMethod('cash');
     setPayNow(true);
+    setCardState('idle');
+    setCardOrderId('');
+    stopPolling();
   };
 
-  const serviceLabel = serviceType === 'togo' 
-    ? 'TO GO' 
-    : tableName 
+  const handleClose = () => {
+    stopPolling();
+    setCardState('idle');
+    setCardOrderId('');
+    setPaymentMethod('cash');
+    setAmountPaid('');
+    setPayNow(true);
+    onClose();
+  };
+
+  const serviceLabel = serviceType === 'togo'
+    ? 'TO GO'
+    : tableName
       ? `SERVICE – Tisch ${tableName}`
       : 'SERVICE';
+
+  const isConfirmDisabled = (() => {
+    if (payNow && paymentMethod === 'card') {
+      return cardState !== 'success';
+    }
+    if (payNow && paymentMethod === 'cash') {
+      return paidAmount > 0 && paidAmount < grandTotal;
+    }
+    return false;
+  })();
+
+  const renderCardStatus = () => {
+    switch (cardState) {
+      case 'starting':
+        return (
+          <div className="flex flex-col items-center gap-3 p-6 animate-fade-in">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-lg font-medium text-foreground">Sende Betrag an Kartenterminal...</p>
+          </div>
+        );
+      case 'waiting':
+        return (
+          <div className="flex flex-col items-center gap-3 p-6 animate-fade-in">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-lg font-medium text-foreground">Warte auf Kartenzahlung...</p>
+            <p className="text-sm text-muted-foreground">Bitte Zahlung am Terminal durchführen</p>
+          </div>
+        );
+      case 'success':
+        return (
+          <div className="p-6 animate-fade-in">
+            <div className="p-4 rounded-xl bg-success/10 border-2 border-success/30 flex flex-col items-center gap-2">
+              <span className="text-3xl">✅</span>
+              <p className="text-lg font-bold text-success">Kartenzahlung erfolgreich</p>
+              <p className="text-sm text-muted-foreground">Bitte auf „Bezahlt" klicken um den Vorgang abzuschließen.</p>
+            </div>
+          </div>
+        );
+      case 'error':
+        return (
+          <div className="p-6 animate-fade-in">
+            <div className="p-4 rounded-xl bg-destructive/10 border-2 border-destructive/30 flex flex-col items-center gap-2">
+              <span className="text-3xl">❌</span>
+              <p className="text-lg font-bold text-destructive">Kartenzahlung fehlgeschlagen</p>
+              <button
+                onClick={handleRetryCard}
+                className="mt-2 py-2 px-6 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors"
+              >
+                Erneut versuchen
+              </button>
+            </div>
+          </div>
+        );
+      case 'cancelled':
+        return (
+          <div className="p-6 animate-fade-in">
+            <div className="p-4 rounded-xl bg-amber-500/10 border-2 border-amber-500/30 flex flex-col items-center gap-2">
+              <span className="text-3xl">⚠️</span>
+              <p className="text-lg font-bold text-amber-600">Kartenzahlung abgebrochen</p>
+              <button
+                onClick={handleRetryCard}
+                className="mt-2 py-2 px-6 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors"
+              >
+                Erneut versuchen
+              </button>
+            </div>
+          </div>
+        );
+      default:
+        return (
+          <div className="p-6 text-center text-muted-foreground animate-fade-in">
+            <p className="text-lg">Bitte Kartenzahlung am Terminal durchführen</p>
+          </div>
+        );
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -133,7 +316,7 @@ const PaymentDialog = ({
           <div className="p-6 space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <button
-                onClick={() => setPaymentMethod('cash')}
+                onClick={handleSelectCash}
                 className={`py-4 px-6 rounded-xl font-semibold text-lg transition-all ${
                   paymentMethod === 'cash'
                     ? 'bg-primary text-primary-foreground ring-2 ring-primary'
@@ -143,8 +326,9 @@ const PaymentDialog = ({
                 Barzahlung
               </button>
               <button
-                onClick={() => setPaymentMethod('card')}
-                className={`py-4 px-6 rounded-xl font-semibold text-lg transition-all ${
+                onClick={handleSelectCard}
+                disabled={cardState === 'starting' || cardState === 'waiting'}
+                className={`py-4 px-6 rounded-xl font-semibold text-lg transition-all disabled:opacity-50 ${
                   paymentMethod === 'card'
                     ? 'bg-primary text-primary-foreground ring-2 ring-primary'
                     : 'bg-muted text-foreground hover:bg-muted/80'
@@ -213,32 +397,22 @@ const PaymentDialog = ({
               </div>
             )}
 
-            {paymentMethod === 'card' && (
-              <div className="p-6 text-center text-muted-foreground animate-fade-in">
-                {cardPaymentPending ? (
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                    <p className="text-lg font-medium text-foreground">Sende Betrag an Kartenterminal...</p>
-                  </div>
-                ) : (
-                  <p className="text-lg">Bitte Kartenzahlung am Terminal durchführen</p>
-                )}
-              </div>
-            )}
+            {/* Card Payment Status */}
+            {paymentMethod === 'card' && renderCardStatus()}
           </div>
         )}
 
         {/* Actions */}
         <div className="p-6 border-t border-border flex gap-3">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="touch-btn-secondary flex-1"
           >
             Abbrechen
           </button>
           <button
             onClick={handleConfirm}
-            disabled={(payNow && paymentMethod === 'cash' && paidAmount > 0 && paidAmount < grandTotal) || cardPaymentPending}
+            disabled={isConfirmDisabled}
             className={`flex-1 disabled:opacity-50 ${
               payNow ? 'touch-btn-success' : 'bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors'
             }`}
