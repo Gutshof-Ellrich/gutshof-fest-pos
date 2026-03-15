@@ -657,6 +657,49 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
             </div>
           </div>
         )}
+
+        {activeTab === 'help' && (
+          <div className="space-y-6 animate-fade-in">
+            <h2 className="font-display text-2xl font-bold text-foreground">iPad Installation</h2>
+            
+            <div className="bg-card rounded-xl border border-border p-6 max-w-2xl">
+              <h3 className="font-display text-lg font-semibold mb-4">SeliCash auf dem iPad-Homescreen installieren</h3>
+              <p className="text-muted-foreground mb-6">
+                So wird SeliCash wie eine native App auf dem iPad genutzt – im Vollbildmodus, ohne Browser-Leiste.
+              </p>
+              
+              <ol className="space-y-4">
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">1</span>
+                  <div>
+                    <p className="font-medium text-foreground">App in Safari öffnen</p>
+                    <p className="text-sm text-muted-foreground">Öffne die Adresse der App im Safari-Browser auf dem iPad.</p>
+                  </div>
+                </li>
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">2</span>
+                  <div>
+                    <p className="font-medium text-foreground">Teilen-Button antippen</p>
+                    <p className="text-sm text-muted-foreground">Tippe auf das Teilen-Symbol (Quadrat mit Pfeil nach oben) in der Safari-Toolbar.</p>
+                  </div>
+                </li>
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">3</span>
+                  <div>
+                    <p className="font-medium text-foreground">„Zum Home-Bildschirm" wählen</p>
+                    <p className="text-sm text-muted-foreground">Scrolle im Menü nach unten und tippe auf „Zum Home-Bildschirm". Bestätige mit „Hinzufügen".</p>
+                  </div>
+                </li>
+              </ol>
+              
+              <div className="mt-6 p-4 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Hinweis:</strong> Die App wird mit dem SeliCash-Logo als Icon auf dem Home-Bildschirm angezeigt und öffnet sich im Vollbildmodus – genau wie eine installierte App.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
