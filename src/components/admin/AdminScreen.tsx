@@ -69,6 +69,7 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
     { id: 'sync', label: 'Synchronisation' },
     { id: 'design', label: 'Design' },
     { id: 'migration', label: 'Migration' },
+    { id: 'security', label: 'Sicherheit' },
     { id: 'help', label: 'Hilfe / iPad' },
   ];
 
