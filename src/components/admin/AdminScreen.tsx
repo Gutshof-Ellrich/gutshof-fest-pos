@@ -60,7 +60,7 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
     { id: 'tables', label: 'Tische' },
     { id: 'deposit', label: 'Pfand' },
     { id: 'printers', label: 'Drucker' },
-    { id: 'receipts', label: 'Bon-Archiv' },
+    
     { id: 'sync', label: 'Synchronisation' },
     { id: 'design', label: 'Design' },
     { id: 'migration', label: 'Migration' },
