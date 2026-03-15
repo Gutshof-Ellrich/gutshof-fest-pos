@@ -359,6 +359,10 @@ export const useAppStore = create<AppState>()(
       depositPerGlass: 2,
       setDepositPerGlass: (value) => set({ depositPerGlass: value }),
 
+      // Admin PIN (default: 1234)
+      adminPin: '1234',
+      setAdminPin: (pin) => set({ adminPin: pin }),
+
       // Background Image
       backgroundImage: null,
       setBackgroundImage: (imageData) => set({ backgroundImage: imageData }),
