@@ -137,6 +137,10 @@ interface AppState {
   depositPerGlass: number;
   setDepositPerGlass: (value: number) => void;
 
+  // Admin PIN
+  adminPin: string;
+  setAdminPin: (pin: string) => void;
+
   // Background Image
   backgroundImage: string | null;
   setBackgroundImage: (imageData: string | null) => void;
