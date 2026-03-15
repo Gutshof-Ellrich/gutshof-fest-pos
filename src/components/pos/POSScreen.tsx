@@ -7,7 +7,7 @@ import PaymentDialog from './PaymentDialog';
 import OpenTablesPanel from './OpenTablesPanel';
 import OrderHistoryDialog from './OrderHistoryDialog';
 import { printOrderToMatchingPrinters, fetchPrinters } from '@/services/printService';
-import { startSumupPayment } from '@/services/sumupService';
+import type { LanPrinter } from '@/types/printer';
 import type { LanPrinter } from '@/types/printer';
 import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
