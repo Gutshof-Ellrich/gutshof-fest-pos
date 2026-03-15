@@ -124,9 +124,13 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
       setCardPaymentPending(true);
       try {
         await startSumupPayment(grandTotal, orderId);
-      } catch {
+        toast.success('Kartenzahlung wurde an das Terminal gesendet.');
+      } catch (error) {
+        console.error('SumUp payment error:', error);
         setCardPaymentPending(false);
-        toast.error('Kartenzahlung konnte nicht gestartet werden.');
+        toast.error('Kartenzahlung konnte nicht gestartet werden.', {
+          description: 'Bitte Verbindung zum Kassensystem prüfen.',
+        });
         return;
       }
       setCardPaymentPending(false);
