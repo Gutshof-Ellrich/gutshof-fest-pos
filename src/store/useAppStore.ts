@@ -137,6 +137,10 @@ interface AppState {
   depositPerGlass: number;
   setDepositPerGlass: (value: number) => void;
 
+  // Admin PIN
+  adminPin: string;
+  setAdminPin: (pin: string) => void;
+
   // Background Image
   backgroundImage: string | null;
   setBackgroundImage: (imageData: string | null) => void;
@@ -355,6 +359,10 @@ export const useAppStore = create<AppState>()(
       depositPerGlass: 2,
       setDepositPerGlass: (value) => set({ depositPerGlass: value }),
 
+      // Admin PIN (default: 1234)
+      adminPin: '1234',
+      setAdminPin: (pin) => set({ adminPin: pin }),
+
       // Background Image
       backgroundImage: null,
       setBackgroundImage: (imageData) => set({ backgroundImage: imageData }),
@@ -377,6 +385,7 @@ export const useAppStore = create<AppState>()(
         tables: state.tables,
         tableTabs: state.tableTabs,
         depositPerGlass: state.depositPerGlass,
+        adminPin: state.adminPin,
         backgroundImage: state.backgroundImage,
         togoCounter: state.togoCounter,
       }),
