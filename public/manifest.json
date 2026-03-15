@@ -1,0 +1,32 @@
+{
+  "name": "SeliCash",
+  "short_name": "SeliCash",
+  "description": "Kassensystem für den Gutshof",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#722F37",
+  "icons": [
+    {
+      "src": "/icons/icon-120x120.png",
+      "sizes": "120x120",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-167x167.png",
+      "sizes": "167x167",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-180x180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
