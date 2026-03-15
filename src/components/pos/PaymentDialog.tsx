@@ -215,7 +215,14 @@ const PaymentDialog = ({
 
             {paymentMethod === 'card' && (
               <div className="p-6 text-center text-muted-foreground animate-fade-in">
-                <p className="text-lg">Bitte Kartenzahlung am Terminal durchführen</p>
+                {cardPaymentPending ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                    <p className="text-lg font-medium text-foreground">Sende Betrag an Kartenterminal...</p>
+                  </div>
+                ) : (
+                  <p className="text-lg">Bitte Kartenzahlung am Terminal durchführen</p>
+                )}
               </div>
             )}
           </div>
