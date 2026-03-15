@@ -1,7 +1,9 @@
-const SUMUP_API_URL = 'http://127.0.0.1:3444/api/payments/sumup/start';
+export const LOCAL_BACKEND_URL = 'http://192.168.188.200:3444';
+
+const SUMUP_ENDPOINT = `${LOCAL_BACKEND_URL}/api/payments/sumup/start`;
 
 export async function startSumupPayment(amount: number, orderId: string): Promise<{ ok: boolean }> {
-  const res = await fetch(SUMUP_API_URL, {
+  const res = await fetch(SUMUP_ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
