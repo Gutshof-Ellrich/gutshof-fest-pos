@@ -3,7 +3,7 @@ import { useAppStore, Category, Product } from '@/store/useAppStore';
 import { toast } from 'sonner';
 import TableManagement from './TableManagement';
 import PrinterManagement from './PrinterManagement';
-import ReceiptArchive from './ReceiptArchive';
+
 import DataSyncManagement from './DataSyncManagement';
 import BackgroundImageUpload from './BackgroundImageUpload';
 import { restoreUmlauts } from '@/lib/searchUtils';
@@ -12,7 +12,7 @@ interface AdminScreenProps {
   onLogout: () => void;
 }
 
-type AdminTab = 'products' | 'categories' | 'tables' | 'deposit' | 'printers' | 'receipts' | 'statistics' | 'sync' | 'design' | 'migration';
+type AdminTab = 'products' | 'categories' | 'tables' | 'deposit' | 'printers' | 'statistics' | 'sync' | 'design' | 'migration';
 
 const AdminScreen = ({ onLogout }: AdminScreenProps) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('statistics');
@@ -60,7 +60,7 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
     { id: 'tables', label: 'Tische' },
     { id: 'deposit', label: 'Pfand' },
     { id: 'printers', label: 'Drucker' },
-    { id: 'receipts', label: 'Bon-Archiv' },
+    
     { id: 'sync', label: 'Synchronisation' },
     { id: 'design', label: 'Design' },
     { id: 'migration', label: 'Migration' },
@@ -589,7 +589,7 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
 
         {activeTab === 'printers' && <PrinterManagement />}
 
-        {activeTab === 'receipts' && <ReceiptArchive />}
+        
         
         {activeTab === 'sync' && <DataSyncManagement />}
 
