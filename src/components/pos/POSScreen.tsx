@@ -24,6 +24,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
   const [showPayment, setShowPayment] = useState(false);
   const [showOpenTables, setShowOpenTables] = useState(false);
   const [showOrderHistory, setShowOrderHistory] = useState(false);
+  const [cardPaymentPending, setCardPaymentPending] = useState(false);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [selectedTableName, setSelectedTableName] = useState<string | null>(null);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
