@@ -589,7 +589,7 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
 
         {activeTab === 'printers' && <PrinterManagement />}
 
-        {activeTab === 'receipts' && <ReceiptArchive />}
+        
         
         {activeTab === 'sync' && <DataSyncManagement />}
 
