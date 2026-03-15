@@ -118,6 +118,20 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     const depositSaldo = (deposit.newDeposits - deposit.returnedDeposits) * depositPerGlass;
     const grandTotal = itemsTotal + depositSaldo;
 
+    // SumUp card terminal integration
+    if (payNow && paymentMethod === 'card') {
+      const orderId = `order-${Date.now()}`;
+      setCardPaymentPending(true);
+      try {
+        await startSumupPayment(grandTotal, orderId);
+      } catch {
+        setCardPaymentPending(false);
+        toast.error('Kartenzahlung konnte nicht gestartet werden.');
+        return;
+      }
+      setCardPaymentPending(false);
+    }
+
     // Assign ToGo number only for paid ToGo orders
     const togoNumber = (serviceType === 'togo' && payNow) ? getNextTogoNumber() : undefined;
 

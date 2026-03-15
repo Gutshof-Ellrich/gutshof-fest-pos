@@ -238,7 +238,7 @@ const PaymentDialog = ({
           </button>
           <button
             onClick={handleConfirm}
-            disabled={payNow && paymentMethod === 'cash' && paidAmount > 0 && paidAmount < grandTotal}
+            disabled={(payNow && paymentMethod === 'cash' && paidAmount > 0 && paidAmount < grandTotal) || cardPaymentPending}
             className={`flex-1 disabled:opacity-50 ${
               payNow ? 'touch-btn-success' : 'bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors'
             }`}
