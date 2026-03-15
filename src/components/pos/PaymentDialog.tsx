@@ -11,6 +11,7 @@ interface PaymentDialogProps {
   serviceType: ServiceType;
   tableName?: string | null;
   allowPayLater?: boolean;
+  cardPaymentPending?: boolean;
 }
 
 const PaymentDialog = ({
