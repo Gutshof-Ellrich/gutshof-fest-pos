@@ -664,6 +664,68 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
           </div>
         )}
 
+        {activeTab === 'security' && (
+          <div className="space-y-6 animate-fade-in">
+            <h2 className="font-display text-2xl font-bold text-foreground">Sicherheit</h2>
+            
+            <div className="bg-card rounded-xl border border-border p-6 max-w-md">
+              <h3 className="font-display text-lg font-semibold mb-4">Admin-PIN ändern</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Der aktuelle PIN hat {adminPin.length} Stellen. Gib einen neuen PIN ein (mind. 4 Ziffern).
+              </p>
+              
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">Neuer PIN</label>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={newPin}
+                    onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
+                    placeholder="Neuen PIN eingeben"
+                    className="w-full px-3 py-2 rounded-lg border border-border focus:border-primary outline-none text-center text-lg tracking-[0.5em]"
+                    maxLength={8}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">PIN bestätigen</label>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={confirmPin}
+                    onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
+                    placeholder="PIN wiederholen"
+                    className="w-full px-3 py-2 rounded-lg border border-border focus:border-primary outline-none text-center text-lg tracking-[0.5em]"
+                    maxLength={8}
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    if (newPin.length < 4) {
+                      toast.error('PIN muss mindestens 4 Ziffern haben');
+                      return;
+                    }
+                    if (newPin !== confirmPin) {
+                      toast.error('PINs stimmen nicht überein');
+                      return;
+                    }
+                    setAdminPin(newPin);
+                    setNewPin('');
+                    setConfirmPin('');
+                    toast.success('Admin-PIN wurde geändert');
+                  }}
+                  className="touch-btn-primary w-full"
+                  disabled={newPin.length < 4 || newPin !== confirmPin}
+                >
+                  PIN speichern
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'help' && (
           <div className="space-y-6 animate-fade-in">
             <h2 className="font-display text-2xl font-bold text-foreground">iPad Installation</h2>
