@@ -385,6 +385,7 @@ export const useAppStore = create<AppState>()(
         tables: state.tables,
         tableTabs: state.tableTabs,
         depositPerGlass: state.depositPerGlass,
+        adminPin: state.adminPin,
         backgroundImage: state.backgroundImage,
         togoCounter: state.togoCounter,
       }),
