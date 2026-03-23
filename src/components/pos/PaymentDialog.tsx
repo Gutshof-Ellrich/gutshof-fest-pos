@@ -1,9 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { PaymentMethod, ServiceType, CartItem, DepositInfo } from '@/store/useAppStore';
-import { startSumupPayment, pollSumupStatus } from '@/services/sumupService';
+import {
+  startSumupPayment,
+  pollSumupCheckoutStatus,
+  SumupPhase,
+  SumupStatusResponse,
+} from '@/services/sumupService';
 import { toast } from 'sonner';
 
-type CardPaymentState = 'idle' | 'starting' | 'waiting' | 'success' | 'error' | 'cancelled';
+type CardPaymentState = 'idle' | 'starting' | 'polling' | 'final';
 
 interface PaymentDialogProps {
   isOpen: boolean;
@@ -17,8 +22,38 @@ interface PaymentDialogProps {
   allowPayLater?: boolean;
 }
 
-const POLL_INTERVAL = 2000;
-const MAX_POLL_ATTEMPTS = 90; // 3 minutes
+const POLL_INTERVAL = 1500;
+
+const phaseIcon: Record<string, string> = {
+  waiting_for_card: '💳',
+  waiting_for_pin: '🔢',
+  waiting_for_signature: '✍️',
+  selecting_tip: '💰',
+  pending: '⏳',
+  success: '✅',
+  cancelled: '⚠️',
+  failed: '❌',
+  reader_offline: '📡',
+};
+
+const phaseVariant: Record<string, 'info' | 'success' | 'warning' | 'error'> = {
+  waiting_for_card: 'info',
+  waiting_for_pin: 'info',
+  waiting_for_signature: 'info',
+  selecting_tip: 'info',
+  pending: 'info',
+  success: 'success',
+  cancelled: 'warning',
+  failed: 'error',
+  reader_offline: 'error',
+};
+
+const variantStyles: Record<string, string> = {
+  info: 'bg-primary/10 border-primary/30 text-primary',
+  success: 'bg-success/10 border-success/30 text-success',
+  warning: 'bg-amber-500/10 border-amber-500/30 text-amber-600',
+  error: 'bg-destructive/10 border-destructive/30 text-destructive',
+};
 
 const PaymentDialog = ({
   isOpen,
@@ -34,10 +69,17 @@ const PaymentDialog = ({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [amountPaid, setAmountPaid] = useState<string>('');
   const [payNow, setPayNow] = useState(true);
+
+  // Card payment states
   const [cardState, setCardState] = useState<CardPaymentState>('idle');
-  const [cardOrderId, setCardOrderId] = useState<string>('');
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const pollCountRef = useRef(0);
+  const [clientTransactionId, setClientTransactionId] = useState<string>('');
+  const [paymentPhase, setPaymentPhase] = useState<SumupPhase | ''>('');
+  const [paymentStatusLabel, setPaymentStatusLabel] = useState<string>('');
+  const [canMarkPaid, setCanMarkPaid] = useState(false);
+  const [lastPaymentError, setLastPaymentError] = useState<string>('');
+
+  const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isPollingRef = useRef(false);
 
   const itemsTotal = isOpen ? items.reduce((sum, item) => sum + item.product.price * item.quantity, 0) : 0;
   const depositNew = deposit.newDeposits * depositPerGlass;
@@ -46,57 +88,84 @@ const PaymentDialog = ({
   const grandTotal = itemsTotal + depositSaldo;
 
   const stopPolling = useCallback(() => {
+    isPollingRef.current = false;
     if (pollingRef.current) {
-      clearInterval(pollingRef.current);
+      clearTimeout(pollingRef.current);
       pollingRef.current = null;
     }
-    pollCountRef.current = 0;
   }, []);
 
-  const startPolling = useCallback((orderId: string) => {
+  const resetCardState = useCallback(() => {
     stopPolling();
-    pollCountRef.current = 0;
-
-    pollingRef.current = setInterval(async () => {
-      pollCountRef.current++;
-      if (pollCountRef.current > MAX_POLL_ATTEMPTS) {
-        stopPolling();
-        setCardState('error');
-        toast.error('Zeitüberschreitung bei Kartenzahlung.');
-        return;
-      }
-      try {
-        const status = await pollSumupStatus(orderId);
-        if (status === 'success') {
-          stopPolling();
-          setCardState('success');
-          toast.success('Kartenzahlung erfolgreich.');
-        } else if (status === 'error') {
-          stopPolling();
-          setCardState('error');
-          toast.error('Kartenzahlung fehlgeschlagen.');
-        } else if (status === 'cancelled') {
-          stopPolling();
-          setCardState('cancelled');
-          toast.error('Kartenzahlung wurde abgebrochen.');
-        }
-        // 'pending' → keep polling
-      } catch (err) {
-        console.error('SumUp status poll error:', err);
-        // Don't stop polling on network blips, let timeout handle it
-      }
-    }, POLL_INTERVAL);
+    setCardState('idle');
+    setClientTransactionId('');
+    setPaymentPhase('');
+    setPaymentStatusLabel('');
+    setCanMarkPaid(false);
+    setLastPaymentError('');
   }, [stopPolling]);
 
-  // Cleanup polling on unmount or dialog close
+  // Polling loop using chained setTimeout to prevent parallel requests
+  const pollStatus = useCallback(
+    (txId: string) => {
+      if (!isPollingRef.current) return;
+
+      const doPoll = async () => {
+        if (!isPollingRef.current) return;
+        try {
+          const data: SumupStatusResponse = await pollSumupCheckoutStatus(txId);
+
+          if (!isPollingRef.current) return; // stopped while awaiting
+
+          if (!data.ok) {
+            setLastPaymentError('Backend meldet Fehler.');
+            setPaymentStatusLabel('Statusabfrage fehlgeschlagen');
+            // keep polling, might recover
+          } else {
+            setPaymentPhase(data.ui.phase);
+            setPaymentStatusLabel(data.ui.label);
+            setCanMarkPaid(data.ui.canMarkPaid);
+            setLastPaymentError('');
+
+            if (data.ui.final) {
+              isPollingRef.current = false;
+              setCardState('final');
+              if (data.ui.phase === 'success') {
+                toast.success('Kartenzahlung erfolgreich.');
+              } else if (data.ui.phase === 'cancelled') {
+                toast.error('Kartenzahlung wurde abgebrochen.');
+              } else if (data.ui.phase === 'failed') {
+                toast.error('Kartenzahlung fehlgeschlagen.');
+              }
+              return; // don't schedule next poll
+            }
+          }
+        } catch (err) {
+          console.error('SumUp status poll error:', err);
+          if (isPollingRef.current) {
+            setLastPaymentError('Verbindung zum Print-Service gestört.');
+          }
+        }
+
+        // Schedule next poll if still active
+        if (isPollingRef.current) {
+          pollingRef.current = setTimeout(doPoll, POLL_INTERVAL);
+        }
+      };
+
+      // First poll immediately
+      doPoll();
+    },
+    []
+  );
+
+  // Cleanup on close/unmount
   useEffect(() => {
     if (!isOpen) {
-      stopPolling();
-      setCardState('idle');
-      setCardOrderId('');
+      resetCardState();
     }
     return () => stopPolling();
-  }, [isOpen, stopPolling]);
+  }, [isOpen, resetCardState, stopPolling]);
 
   if (!isOpen) return null;
 
@@ -107,17 +176,30 @@ const PaymentDialog = ({
   const handleSelectCard = async () => {
     setPaymentMethod('card');
     setCardState('starting');
+    setCanMarkPaid(false);
+    setLastPaymentError('');
+    setPaymentPhase('');
+    setPaymentStatusLabel('Sende Betrag an Kartenterminal...');
+    stopPolling();
 
     const orderId = `order-${Date.now()}`;
-    setCardOrderId(orderId);
 
     try {
-      await startSumupPayment(grandTotal, orderId);
-      setCardState('waiting');
-      startPolling(orderId);
+      const result = await startSumupPayment(grandTotal, orderId);
+      const txId = result.clientTransactionId || orderId;
+      setClientTransactionId(txId);
+      setCardState('polling');
+      setPaymentStatusLabel('Warte auf Kartenzahlung...');
+
+      // Start polling
+      isPollingRef.current = true;
+      pollStatus(txId);
     } catch (error) {
       console.error('SumUp payment error:', error);
-      setCardState('error');
+      setCardState('final');
+      setPaymentPhase('failed');
+      setPaymentStatusLabel('Kartenzahlung konnte nicht gestartet werden.');
+      setLastPaymentError('Bitte Verbindung zum Kassensystem prüfen.');
       toast.error('Kartenzahlung konnte nicht gestartet werden.', {
         description: 'Bitte Verbindung zum Kassensystem prüfen.',
       });
@@ -125,8 +207,7 @@ const PaymentDialog = ({
   };
 
   const handleSelectCash = () => {
-    stopPolling();
-    setCardState('idle');
+    resetCardState();
     setPaymentMethod('cash');
   };
 
@@ -135,40 +216,37 @@ const PaymentDialog = ({
   };
 
   const handleConfirm = () => {
-    if (payNow && paymentMethod === 'cash' && paidAmount < grandTotal) {
+    if (payNow && paymentMethod === 'cash' && paidAmount > 0 && paidAmount < grandTotal) {
       return;
     }
-    if (payNow && paymentMethod === 'card' && cardState !== 'success') {
+    if (payNow && paymentMethod === 'card' && !canMarkPaid) {
       return;
     }
     onConfirm(paymentMethod, payNow, payNow && paymentMethod === 'cash' ? paidAmount : undefined);
     setAmountPaid('');
     setPaymentMethod('cash');
     setPayNow(true);
-    setCardState('idle');
-    setCardOrderId('');
-    stopPolling();
+    resetCardState();
   };
 
   const handleClose = () => {
-    stopPolling();
-    setCardState('idle');
-    setCardOrderId('');
+    resetCardState();
     setPaymentMethod('cash');
     setAmountPaid('');
     setPayNow(true);
     onClose();
   };
 
-  const serviceLabel = serviceType === 'togo'
-    ? 'TO GO'
-    : tableName
-      ? `SERVICE – Tisch ${tableName}`
-      : 'SERVICE';
+  const serviceLabel =
+    serviceType === 'togo'
+      ? 'TO GO'
+      : tableName
+        ? `SERVICE – Tisch ${tableName}`
+        : 'SERVICE';
 
   const isConfirmDisabled = (() => {
     if (payNow && paymentMethod === 'card') {
-      return cardState !== 'success';
+      return !canMarkPaid;
     }
     if (payNow && paymentMethod === 'cash') {
       return paidAmount > 0 && paidAmount < grandTotal;
@@ -177,69 +255,50 @@ const PaymentDialog = ({
   })();
 
   const renderCardStatus = () => {
-    switch (cardState) {
-      case 'starting':
-        return (
-          <div className="flex flex-col items-center gap-3 p-6 animate-fade-in">
-            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-            <p className="text-lg font-medium text-foreground">Sende Betrag an Kartenterminal...</p>
-          </div>
-        );
-      case 'waiting':
-        return (
-          <div className="flex flex-col items-center gap-3 p-6 animate-fade-in">
-            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-            <p className="text-lg font-medium text-foreground">Warte auf Kartenzahlung...</p>
-            <p className="text-sm text-muted-foreground">Bitte Zahlung am Terminal durchführen</p>
-          </div>
-        );
-      case 'success':
-        return (
-          <div className="p-6 animate-fade-in">
-            <div className="p-4 rounded-xl bg-success/10 border-2 border-success/30 flex flex-col items-center gap-2">
-              <span className="text-3xl">✅</span>
-              <p className="text-lg font-bold text-success">Kartenzahlung erfolgreich</p>
-              <p className="text-sm text-muted-foreground">Bitte auf „Bezahlt" klicken um den Vorgang abzuschließen.</p>
-            </div>
-          </div>
-        );
-      case 'error':
-        return (
-          <div className="p-6 animate-fade-in">
-            <div className="p-4 rounded-xl bg-destructive/10 border-2 border-destructive/30 flex flex-col items-center gap-2">
-              <span className="text-3xl">❌</span>
-              <p className="text-lg font-bold text-destructive">Kartenzahlung fehlgeschlagen</p>
-              <button
-                onClick={handleRetryCard}
-                className="mt-2 py-2 px-6 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors"
-              >
-                Erneut versuchen
-              </button>
-            </div>
-          </div>
-        );
-      case 'cancelled':
-        return (
-          <div className="p-6 animate-fade-in">
-            <div className="p-4 rounded-xl bg-amber-500/10 border-2 border-amber-500/30 flex flex-col items-center gap-2">
-              <span className="text-3xl">⚠️</span>
-              <p className="text-lg font-bold text-amber-600">Kartenzahlung abgebrochen</p>
-              <button
-                onClick={handleRetryCard}
-                className="mt-2 py-2 px-6 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors"
-              >
-                Erneut versuchen
-              </button>
-            </div>
-          </div>
-        );
-      default:
-        return (
-          <div className="p-6 text-center text-muted-foreground animate-fade-in">
-            <p className="text-lg">Bitte Kartenzahlung am Terminal durchführen</p>
-          </div>
-        );
+    if (cardState === 'starting') {
+      return (
+        <div className="flex flex-col items-center gap-3 p-6 animate-fade-in">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-lg font-medium text-foreground">Sende Betrag an Kartenterminal...</p>
+        </div>
+      );
     }
+
+    const phase = paymentPhase || 'pending';
+    const variant = phaseVariant[phase] || 'info';
+    const icon = phaseIcon[phase] || '⏳';
+    const styles = variantStyles[variant];
+    const isWaiting = ['waiting_for_card', 'waiting_for_pin', 'waiting_for_signature', 'selecting_tip', 'pending'].includes(phase);
+    const isFinal = cardState === 'final';
+    const showRetry = isFinal && (phase === 'failed' || phase === 'cancelled' || phase === 'reader_offline');
+
+    return (
+      <div className="p-6 animate-fade-in space-y-3">
+        <div className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 ${styles}`}>
+          <span className="text-3xl">{icon}</span>
+          <p className="text-lg font-bold">{paymentStatusLabel}</p>
+          {isWaiting && !isFinal && (
+            <div className="w-6 h-6 border-3 border-current border-t-transparent rounded-full animate-spin mt-1" />
+          )}
+          {lastPaymentError && (
+            <p className="text-sm opacity-80 mt-1">{lastPaymentError}</p>
+          )}
+          {phase === 'success' && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Bitte auf „Bezahlt" klicken um den Vorgang abzuschließen.
+            </p>
+          )}
+        </div>
+        {showRetry && (
+          <button
+            onClick={handleRetryCard}
+            className="w-full py-3 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors"
+          >
+            Erneut versuchen
+          </button>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -327,7 +386,7 @@ const PaymentDialog = ({
               </button>
               <button
                 onClick={handleSelectCard}
-                disabled={cardState === 'starting' || cardState === 'waiting'}
+                disabled={cardState === 'starting' || cardState === 'polling'}
                 className={`py-4 px-6 rounded-xl font-semibold text-lg transition-all disabled:opacity-50 ${
                   paymentMethod === 'card'
                     ? 'bg-primary text-primary-foreground ring-2 ring-primary'
@@ -414,7 +473,9 @@ const PaymentDialog = ({
             onClick={handleConfirm}
             disabled={isConfirmDisabled}
             className={`flex-1 disabled:opacity-50 ${
-              payNow ? 'touch-btn-success' : 'bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors'
+              payNow
+                ? 'touch-btn-success'
+                : 'bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors'
             }`}
           >
             {payNow ? 'Bezahlt' : 'Auf Rechnung'}
