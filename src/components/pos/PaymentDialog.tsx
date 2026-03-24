@@ -67,6 +67,7 @@ const PaymentDialog = ({
   serviceType,
   tableName,
   allowPayLater = false,
+  role,
 }: PaymentDialogProps) => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [amountPaid, setAmountPaid] = useState<string>('');
@@ -182,6 +183,15 @@ const PaymentDialog = ({
 
   const handleSelectCard = async () => {
     setPaymentMethod('card');
+
+    const soloDevice = getAssignedSoloDevice(role);
+    if (!soloDevice) {
+      // No Solo device assigned for this role (e.g. Bar) — just select card, no terminal flow
+      setCanMarkPaid(true);
+      setCardState('idle');
+      return;
+    }
+
     setCardState('starting');
     setCanMarkPaid(false);
     setLastPaymentError('');
