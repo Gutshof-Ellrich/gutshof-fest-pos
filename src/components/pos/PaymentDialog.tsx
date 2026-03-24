@@ -23,6 +23,7 @@ interface PaymentDialogProps {
   tableName?: string | null;
   allowPayLater?: boolean;
   role: 'bar' | 'food' | 'combined';
+  isSaving?: boolean;
 }
 
 const POLL_INTERVAL = 1500;
@@ -69,6 +70,7 @@ const PaymentDialog = ({
   tableName,
   allowPayLater = false,
   role,
+  isSaving = false,
 }: PaymentDialogProps) => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [amountPaid, setAmountPaid] = useState<string>('');
@@ -265,6 +267,7 @@ const PaymentDialog = ({
         : 'SERVICE';
 
   const isConfirmDisabled = (() => {
+    if (isSaving) return true;
     if (payNow && paymentMethod === 'card') {
       return !canMarkPaid;
     }
@@ -498,7 +501,12 @@ const PaymentDialog = ({
                 : 'bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors'
             }`}
           >
-            {payNow ? 'Bezahlt' : 'Auf Rechnung'}
+            {isSaving ? (
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                Speichern...
+              </span>
+            ) : payNow ? 'Bezahlt' : 'Auf Rechnung'}
           </button>
         </div>
       </div>

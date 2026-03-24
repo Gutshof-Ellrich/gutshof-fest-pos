@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAppStore, Product, Order, PaymentMethod } from '@/store/useAppStore';
 import CategoryGrid from './CategoryGrid';
 import ProductGrid from './ProductGrid';
@@ -9,6 +9,7 @@ import OrderHistoryDialog from './OrderHistoryDialog';
 import { printOrderToMatchingPrinters, fetchPrinters } from '@/services/printService';
 import type { LanPrinter } from '@/types/printer';
 import { toast } from 'sonner';
+import { buildOrderPayload, saveCompletedOrderToBackend } from '@/services/orderService';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ShoppingCart, Clock, Receipt } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -27,6 +28,8 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [selectedTableName, setSelectedTableName] = useState<string | null>(null);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const [pendingOrder, setPendingOrder] = useState<Order | null>(null);
   const isMobile = useIsMobile();
 
   const { setServiceType } = useAppStore();
@@ -112,12 +115,84 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     setShowPayment(true);
   };
 
+  const finalizeOrder = useCallback(async (order: Order) => {
+    setIsSavingOrder(true);
+    setPendingOrder(order);
+
+    try {
+      const payload = buildOrderPayload(order, categories);
+      await saveCompletedOrderToBackend(payload);
+    } catch {
+      setIsSavingOrder(false);
+      toast.error('Fehler beim Speichern der Bestellung. Bitte erneut versuchen.', {
+        duration: 10000,
+      });
+      return; // Do NOT print, do NOT clear cart
+    }
+
+    // Save succeeded → continue with existing flow
+    setIsSavingOrder(false);
+    setPendingOrder(null);
+
+    addOrder(order);
+
+    if (!order.isPaid && order.serviceType === 'service' && order.tableId && order.tableName) {
+      addToTableTab(order.tableId, order.tableName, order);
+    }
+
+    // Print to all matching LAN printers
+    if (order.items.length > 0) {
+      printOrderToMatchingPrinters(order, lanPrinters, role).then(({ failed }) => {
+        failed.forEach((name) => {
+          toast.error(`Druck fehlgeschlagen: ${name}`, {
+            action: {
+              label: 'Erneut drucken',
+              onClick: () => printOrderToMatchingPrinters(order, lanPrinters, role),
+            },
+          });
+        });
+      });
+    }
+
+    clearCart();
+    setShowPayment(false);
+    setSelectedCategoryId(null);
+    setSelectedTableId(null);
+    setSelectedTableName(null);
+
+    const tableInfo = order.serviceType === 'service' && order.tableName
+      ? ` - Tisch ${order.tableName}`
+      : '';
+
+    if (order.isPaid) {
+      const togoInfo = order.serviceType === 'togo' && order.togoNumber !== undefined ? ` | ToGo-Nr: ${order.togoNumber}` : '';
+      toast.success(
+        `Bestellung ${order.serviceType === 'togo' ? 'TO GO' : 'SERVICE'}${tableInfo} abgeschlossen`,
+        {
+          description: `${order.grandTotal.toFixed(2).replace('.', ',')} € - ${order.paymentMethod === 'cash' ? 'Bar' : 'Karte'}${togoInfo}`,
+        }
+      );
+    } else {
+      toast.success(
+        `Bestellung auf Tisch ${order.tableName} gebucht`,
+        {
+          description: `${order.grandTotal.toFixed(2).replace('.', ',')} € - Zahlung später`,
+        }
+      );
+    }
+  }, [categories, lanPrinters, role, addOrder, addToTableTab, clearCart]);
+
+  const handleRetryOrder = useCallback(() => {
+    if (pendingOrder) {
+      finalizeOrder(pendingOrder);
+    }
+  }, [pendingOrder, finalizeOrder]);
+
   const handlePaymentConfirm = async (paymentMethod: PaymentMethod, payNow: boolean, amountPaid?: number) => {
     const itemsTotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
     const depositSaldo = (deposit.newDeposits - deposit.returnedDeposits) * depositPerGlass;
     const grandTotal = itemsTotal + depositSaldo;
 
-    // Assign ToGo number only for paid ToGo orders
     const togoNumber = (serviceType === 'togo' && payNow) ? getNextTogoNumber() : undefined;
 
     const order: Order = {
@@ -139,52 +214,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
       togoNumber,
     };
 
-    addOrder(order);
-
-    if (!payNow && serviceType === 'service' && selectedTableId && selectedTableName) {
-      addToTableTab(selectedTableId, selectedTableName, order);
-    }
-    
-    // Print to all matching LAN printers
-    if (order.items.length > 0) {
-      printOrderToMatchingPrinters(order, lanPrinters, role).then(({ failed }) => {
-        failed.forEach((name) => {
-          toast.error(`Druck fehlgeschlagen: ${name}`, {
-            action: {
-              label: 'Erneut drucken',
-              onClick: () => printOrderToMatchingPrinters(order, lanPrinters, role),
-            },
-          });
-        });
-      });
-    }
-    
-    clearCart();
-    setShowPayment(false);
-    setSelectedCategoryId(null);
-    setSelectedTableId(null);
-    setSelectedTableName(null);
-
-    const tableInfo = serviceType === 'service' && selectedTableName 
-      ? ` - Tisch ${selectedTableName}` 
-      : '';
-
-    if (payNow) {
-      const togoInfo = serviceType === 'togo' && togoNumber !== undefined ? ` | ToGo-Nr: ${togoNumber}` : '';
-      toast.success(
-        `Bestellung ${serviceType === 'togo' ? 'TO GO' : 'SERVICE'}${tableInfo} abgeschlossen`,
-        {
-          description: `${grandTotal.toFixed(2).replace('.', ',')} € - ${paymentMethod === 'cash' ? 'Bar' : 'Karte'}${togoInfo}`,
-        }
-      );
-    } else {
-      toast.success(
-        `Bestellung auf Tisch ${selectedTableName} gebucht`,
-        {
-          description: `${grandTotal.toFixed(2).replace('.', ',')} € - Zahlung später`,
-        }
-      );
-    }
+    await finalizeOrder(order);
   };
 
   const roleTitle = role === 'bar' ? 'Getränke' : role === 'food' ? 'Speisen' : 'Komplett';
@@ -338,7 +368,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
 
       <PaymentDialog
         isOpen={showPayment}
-        onClose={() => setShowPayment(false)}
+        onClose={() => { if (!isSavingOrder) setShowPayment(false); }}
         onConfirm={handlePaymentConfirm}
         items={cart}
         deposit={deposit}
@@ -347,7 +377,39 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
         tableName={selectedTableName}
         allowPayLater={serviceType === 'service' && !!selectedTableId}
         role={role}
+        isSaving={isSavingOrder}
       />
+
+      {/* Retry overlay when order save failed */}
+      {pendingOrder && !isSavingOrder && (
+        <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">
+          <div className="bg-card rounded-2xl shadow-soft-lg w-full max-w-md p-6 space-y-4 animate-scale-in">
+            <div className="text-center space-y-2">
+              <span className="text-4xl">⚠️</span>
+              <h3 className="font-display text-xl font-bold text-foreground">
+                Speichern fehlgeschlagen
+              </h3>
+              <p className="text-muted-foreground">
+                Die Bestellung konnte nicht gespeichert werden. Bitte erneut versuchen.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setPendingOrder(null); }}
+                className="flex-1 touch-btn-secondary"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={handleRetryOrder}
+                className="flex-1 touch-btn-success"
+              >
+                Erneut speichern
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <OpenTablesPanel
         isOpen={showOpenTables}
