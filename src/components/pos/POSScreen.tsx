@@ -28,6 +28,8 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [selectedTableName, setSelectedTableName] = useState<string | null>(null);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const [pendingOrder, setPendingOrder] = useState<Order | null>(null);
   const isMobile = useIsMobile();
 
   const { setServiceType } = useAppStore();
