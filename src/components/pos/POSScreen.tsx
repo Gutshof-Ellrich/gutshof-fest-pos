@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAppStore, Product, Order, PaymentMethod } from '@/store/useAppStore';
 import CategoryGrid from './CategoryGrid';
 import ProductGrid from './ProductGrid';
@@ -9,6 +9,7 @@ import OrderHistoryDialog from './OrderHistoryDialog';
 import { printOrderToMatchingPrinters, fetchPrinters } from '@/services/printService';
 import type { LanPrinter } from '@/types/printer';
 import { toast } from 'sonner';
+import { buildOrderPayload, saveCompletedOrderToBackend } from '@/services/orderService';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ShoppingCart, Clock, Receipt } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
