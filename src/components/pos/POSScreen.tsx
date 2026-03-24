@@ -121,12 +121,14 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     setPendingOrder(order);
 
     try {
+      console.log('[checkout] build payload start', order);
       const payload = buildOrderPayload(order, categories);
+      console.log('[checkout] build payload success', payload);
       console.log('[checkout] save order start', { endpoint: 'http://192.168.188.200:3444/api/orders/save' });
       await saveCompletedOrderToBackend(payload);
       console.log('[checkout] save order success');
-    } catch {
-      console.error('[checkout] save order FAILED');
+    } catch (error) {
+      console.error('[checkout] save order FAILED', error);
       setIsSavingOrder(false);
       toast.error('Fehler beim Speichern der Bestellung. Bitte erneut versuchen.', {
         duration: 10000,

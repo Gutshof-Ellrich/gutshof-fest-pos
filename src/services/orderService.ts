@@ -57,7 +57,9 @@ export function buildOrderPayload(
       categoryName: catMap.get(item.product.categoryId) || '',
       quantity: item.quantity,
       unitPrice: item.product.price,
-      deposit: item.product.hasDeposit ? order.deposit.depositValue : 0,
+      deposit: item.product.hasDeposit
+        ? Number(order.deposit?.depositValue ?? (item.product as any).depositValue ?? 0)
+        : 0,
     })),
     payment: order.paymentMethod === 'card'
       ? {
