@@ -368,7 +368,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
 
       <PaymentDialog
         isOpen={showPayment}
-        onClose={() => setShowPayment(false)}
+        onClose={() => { if (!isSavingOrder) setShowPayment(false); }}
         onConfirm={handlePaymentConfirm}
         items={cart}
         deposit={deposit}
@@ -377,7 +377,39 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
         tableName={selectedTableName}
         allowPayLater={serviceType === 'service' && !!selectedTableId}
         role={role}
+        isSaving={isSavingOrder}
       />
+
+      {/* Retry overlay when order save failed */}
+      {pendingOrder && !isSavingOrder && (
+        <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">
+          <div className="bg-card rounded-2xl shadow-soft-lg w-full max-w-md p-6 space-y-4 animate-scale-in">
+            <div className="text-center space-y-2">
+              <span className="text-4xl">⚠️</span>
+              <h3 className="font-display text-xl font-bold text-foreground">
+                Speichern fehlgeschlagen
+              </h3>
+              <p className="text-muted-foreground">
+                Die Bestellung konnte nicht gespeichert werden. Bitte erneut versuchen.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setPendingOrder(null); }}
+                className="flex-1 touch-btn-secondary"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={handleRetryOrder}
+                className="flex-1 touch-btn-success"
+              >
+                Erneut speichern
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <OpenTablesPanel
         isOpen={showOpenTables}
