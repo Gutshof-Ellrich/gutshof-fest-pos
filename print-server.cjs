@@ -544,6 +544,49 @@ app.post("/api/payments/sumup/start", async (req, res) => {
 
 
 // ------------------------------------------------------------
+// Master Data (central JSON store)
+// ------------------------------------------------------------
+function loadMasterData() {
+  try {
+    return JSON.parse(fs.readFileSync(MASTERDATA_FILE, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+function saveMasterDataFile(data) {
+  fs.writeFileSync(MASTERDATA_FILE, JSON.stringify(data, null, 2), "utf8");
+}
+
+app.get("/api/masterdata", (_req, res) => {
+  const data = loadMasterData();
+  if (!data) {
+    return res.status(404).json({ error: "Keine Stammdaten vorhanden" });
+  }
+  res.json(data);
+});
+
+app.put("/api/masterdata", (req, res) => {
+  const body = req.body;
+  if (!body || typeof body !== "object") {
+    return res.status(400).json({ error: "Ungueltige Daten" });
+  }
+
+  const data = {
+    categories: body.categories || [],
+    products: body.products || [],
+    tables: body.tables || [],
+    depositPerGlass: body.depositPerGlass ?? 2,
+    adminPin: body.adminPin || "1234",
+    backgroundImage: body.backgroundImage ?? null,
+    updatedAt: new Date().toISOString(),
+  };
+
+  saveMasterDataFile(data);
+  res.json(data);
+});
+
+// ------------------------------------------------------------
 // Start
 // ------------------------------------------------------------
 app.listen(3444, "0.0.0.0", () => {
