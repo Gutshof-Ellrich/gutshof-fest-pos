@@ -3,6 +3,7 @@ import { PaymentMethod, ServiceType, CartItem, DepositInfo } from '@/store/useAp
 import {
   startSumupPayment,
   pollSumupCheckoutStatus,
+  getAssignedSoloDevice,
   SumupPhase,
   SumupStatusResponse,
 } from '@/services/sumupService';
@@ -20,6 +21,7 @@ interface PaymentDialogProps {
   serviceType: ServiceType;
   tableName?: string | null;
   allowPayLater?: boolean;
+  role: 'bar' | 'food' | 'combined';
 }
 
 const POLL_INTERVAL = 1500;
@@ -65,6 +67,7 @@ const PaymentDialog = ({
   serviceType,
   tableName,
   allowPayLater = false,
+  role,
 }: PaymentDialogProps) => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [amountPaid, setAmountPaid] = useState<string>('');
@@ -180,6 +183,15 @@ const PaymentDialog = ({
 
   const handleSelectCard = async () => {
     setPaymentMethod('card');
+
+    const soloDevice = getAssignedSoloDevice(role);
+    if (!soloDevice) {
+      // No Solo device assigned for this role (e.g. Bar) — just select card, no terminal flow
+      setCanMarkPaid(true);
+      setCardState('idle');
+      return;
+    }
+
     setCardState('starting');
     setCanMarkPaid(false);
     setLastPaymentError('');

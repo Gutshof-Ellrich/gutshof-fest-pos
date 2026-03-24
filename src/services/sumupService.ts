@@ -1,5 +1,18 @@
 export const LOCAL_BACKEND_URL = 'http://192.168.188.200:3444';
 
+/**
+ * Determines whether the existing SumUp Solo device should be used for the given role.
+ * Currently: 'food' and 'combined' use the existing Solo.
+ * 'bar' will get its own device later — returns null for now.
+ */
+export function getAssignedSoloDevice(role: string): { url: string } | null {
+  if (role === 'food' || role === 'combined') {
+    return { url: LOCAL_BACKEND_URL };
+  }
+  // Bar: no device assigned yet
+  return null;
+}
+
 const SUMUP_START_ENDPOINT = `${LOCAL_BACKEND_URL}/api/payments/sumup/start`;
 const SUMUP_STATUS_ENDPOINT = `${LOCAL_BACKEND_URL}/api/sumup/checkout-status`;
 
