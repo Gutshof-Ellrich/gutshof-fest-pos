@@ -3,6 +3,7 @@ import { PaymentMethod, ServiceType, CartItem, DepositInfo } from '@/store/useAp
 import {
   startSumupPayment,
   pollSumupCheckoutStatus,
+  getAssignedSoloDevice,
   SumupPhase,
   SumupStatusResponse,
 } from '@/services/sumupService';
@@ -20,6 +21,7 @@ interface PaymentDialogProps {
   serviceType: ServiceType;
   tableName?: string | null;
   allowPayLater?: boolean;
+  role: 'bar' | 'food' | 'combined';
 }
 
 const POLL_INTERVAL = 1500;
