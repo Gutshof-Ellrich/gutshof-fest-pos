@@ -140,12 +140,17 @@ const PaymentDialog = ({
               return; // don't schedule next poll
             }
           }
-        } catch (err) {
-          console.error('SumUp status poll error:', err);
-          if (isPollingRef.current) {
-            setLastPaymentError('Verbindung zum Print-Service gestört.');
-          }
-        }
+          
+         } catch (err) {
+           console.error('SumUp status poll error:', err);
+           if (isPollingRef.current) {
+           const message =
+            err instanceof Error ? err.message : 'Unbekannter Fehler bei der Statusabfrage';
+           setLastPaymentError(`Statusabfrage fehlgeschlagen: ${message}`);
+           setPaymentStatusLabel('Statusabfrage fehlgeschlagen');
+           }
+         }        
+
 
         // Schedule next poll if still active
         if (isPollingRef.current) {
@@ -186,7 +191,7 @@ const PaymentDialog = ({
 
     try {
       const result = await startSumupPayment(grandTotal, orderId);
-      const txId = result.clientTransactionId || orderId;
+      const txId = result.orderId || result.clientTransactionId || orderId;
       setClientTransactionId(txId);
       setCardState('polling');
       setPaymentStatusLabel('Warte auf Kartenzahlung...');

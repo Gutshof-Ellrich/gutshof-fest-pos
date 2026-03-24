@@ -31,7 +31,7 @@ export interface SumupStatusResponse {
 export async function startSumupPayment(
   amount: number,
   orderId: string
-): Promise<{ ok: boolean; clientTransactionId?: string }> {
+): Promise<{ ok: boolean; clientTransactionId?: string; orderId?: string }> {
   const res = await fetch(SUMUP_START_ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -55,10 +55,10 @@ export async function startSumupPayment(
 }
 
 export async function pollSumupCheckoutStatus(
-  clientTransactionId: string
+  orderId: string
 ): Promise<SumupStatusResponse> {
   const res = await fetch(
-    `${SUMUP_STATUS_ENDPOINT}?clientTransactionId=${encodeURIComponent(clientTransactionId)}`
+    `${SUMUP_STATUS_ENDPOINT}?orderId=${encodeURIComponent(orderId)}`
   );
 
   if (!res.ok) {
