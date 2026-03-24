@@ -116,13 +116,17 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
   };
 
   const finalizeOrder = useCallback(async (order: Order) => {
+    console.log('[checkout] finalizeOrder aufgerufen', { orderId: order.id, paymentMethod: order.paymentMethod });
     setIsSavingOrder(true);
     setPendingOrder(order);
 
     try {
       const payload = buildOrderPayload(order, categories);
+      console.log('[checkout] save order start', { endpoint: 'http://192.168.188.200:3444/api/orders/save' });
       await saveCompletedOrderToBackend(payload);
+      console.log('[checkout] save order success');
     } catch {
+      console.error('[checkout] save order FAILED');
       setIsSavingOrder(false);
       toast.error('Fehler beim Speichern der Bestellung. Bitte erneut versuchen.', {
         duration: 10000,
@@ -142,6 +146,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
 
     // Print to all matching LAN printers
     if (order.items.length > 0) {
+      console.log('[checkout] print start');
       printOrderToMatchingPrinters(order, lanPrinters, role).then(({ failed }) => {
         failed.forEach((name) => {
           toast.error(`Druck fehlgeschlagen: ${name}`, {
@@ -154,6 +159,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
       });
     }
 
+    console.log('[checkout] clear cart');
     clearCart();
     setShowPayment(false);
     setSelectedCategoryId(null);

@@ -238,6 +238,7 @@ const PaymentDialog = ({
   };
 
   const handleConfirm = () => {
+    console.log('[checkout] Bezahlt geklickt', { paymentMethod, payNow, canMarkPaid });
     if (payNow && paymentMethod === 'cash' && paidAmount > 0 && paidAmount < grandTotal) {
       return;
     }
