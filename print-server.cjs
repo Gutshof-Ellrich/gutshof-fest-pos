@@ -126,6 +126,7 @@ app.use(sumupStatusRoute);
 // ------------------------------------------------------------
 const PRINTERS_FILE = path.join(__dirname, "printers.json");
 const ARCHIVE_FILE = path.join(__dirname, "receipt-archive.json");
+const MASTERDATA_FILE = path.join(__dirname, "masterdata.json");
 
 // ------------------------------------------------------------
 // Helpers: storage
