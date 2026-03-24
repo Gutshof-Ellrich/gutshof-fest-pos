@@ -31,7 +31,8 @@ function loadSumupEnv() {
   const requiredKeys = [
     "SUMUP_API_KEY",
     "SUMUP_MERCHANT_CODE",
-    "SUMUP_READER_ID",
+    "SUMUP_READER_ID_FOOD",
+    "SUMUP_READER_ID_BAR",
   ];
 
   for (const key of requiredKeys) {
@@ -232,9 +233,23 @@ router.get("/api/sumup/checkout-status", async (req, res) => {
       req.query.merchantCode || env.SUMUP_MERCHANT_CODE || ""
     ).trim();
 
-    const readerId = String(
-      req.query.readerId || env.SUMUP_READER_ID || ""
-    ).trim();
+ 
+
+   const deviceKey = String(req.query.deviceKey || "").trim();
+
+   let defaultReaderId = "";
+   if (deviceKey === "solo-bar") {
+     defaultReaderId = env.SUMUP_READER_ID_BAR || "";
+   } else if (deviceKey === "solo-food") {
+     defaultReaderId = env.SUMUP_READER_ID_FOOD || "";
+   }
+
+   const readerId = String(
+    req.query.readerId || defaultReaderId || ""
+   ).trim();
+
+
+
 
     if (!orderId) {
       return res.status(400).json({

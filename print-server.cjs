@@ -46,7 +46,8 @@ function loadSumupEnv() {
     "SUMUP_AFFILIATE_KEY",
     "SUMUP_APP_ID",
     "SUMUP_MERCHANT_CODE",
-    "SUMUP_READER_ID",
+    "SUMUP_READER_ID_FOOD",
+    "SUMUP_READER_ID_BAR",
   ];
 
   for (const key of requiredKeys) {
@@ -465,13 +466,34 @@ app.post("/api/receipts/:id/reprint", (req, res) => {
 // -------------------
 app.post("/api/payments/sumup/start", async (req, res) => {
   try {
-    const { amount, description, orderId } = req.body || {};
+    const { amount, description, orderId, deviceKey } = req.body || {};
 
     if (!amount) {
       return res.status(400).json({ ok: false, error: "amount fehlt" });
     }
 
     const env = loadSumupEnv();
+
+    let readerId;
+    if (deviceKey === "solo-bar") {
+      readerId = env.SUMUP_READER_ID_BAR;
+    } else {
+      readerId = env.SUMUP_READER_ID_FOOD;
+    }
+
+    if (!readerId) {
+      return res.status(500).json({
+        ok: false,
+        error: "Keine passende SUMUP Reader-ID konfiguriert",
+      });
+    }
+
+    console.log("[SUMUP START]", {
+      amount,
+      orderId,
+      deviceKey,
+      readerId,
+    });
 
     const payload = {
       affiliate: {
@@ -480,6 +502,7 @@ app.post("/api/payments/sumup/start", async (req, res) => {
         foreign_transaction_id: orderId || crypto.randomUUID(),
         tags: {
           source: "selicash",
+          deviceKey: deviceKey || "solo-food",
         },
       },
       description: description || "SeliCash Kartenzahlung",
@@ -491,7 +514,7 @@ app.post("/api/payments/sumup/start", async (req, res) => {
     };
 
     const result = await sumupFetch(
-      `/v0.1/merchants/${env.SUMUP_MERCHANT_CODE}/readers/${env.SUMUP_READER_ID}/checkout`,
+      `/v0.1/merchants/${env.SUMUP_MERCHANT_CODE}/readers/${readerId}/checkout`,
       {
         method: "POST",
         body: payload,
@@ -500,17 +523,15 @@ app.post("/api/payments/sumup/start", async (req, res) => {
     );
 
     return res.json({
-     ok: true,
-     clientTransactionId:
-     result?.data?.client_transaction_id ||
-     result?.client_transaction_id ||
-     null,
-     orderId,
-    sumup: result,
-   });
-
-
-} catch (err) {
+      ok: true,
+      clientTransactionId:
+        result?.data?.client_transaction_id ||
+        result?.client_transaction_id ||
+        null,
+      orderId,
+      sumup: result,
+    });
+  } catch (err) {
     console.error("SUMUP START ERROR:", err);
     return res.status(500).json({
       ok: false,
@@ -518,7 +539,6 @@ app.post("/api/payments/sumup/start", async (req, res) => {
     });
   }
 });
-
 
 
 
