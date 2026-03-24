@@ -1,7 +1,7 @@
-import { SUMUP_BASE_URL } from './sumupService';
 import type { Order } from '@/store/useAppStore';
 
-const API_BASE = SUMUP_BASE_URL;
+const LOCAL_BACKEND_URL = 'http://192.168.188.200:3444';
+const ORDERS_SAVE_ENDPOINT = `${LOCAL_BACKEND_URL}/api/orders/save`;
 
 export interface OrderPayload {
   id: string;
@@ -70,19 +70,50 @@ export function buildOrderPayload(
 }
 
 export async function saveCompletedOrderToBackend(payload: OrderPayload): Promise<OrderSaveResponse> {
-  const res = await fetch(`${API_BASE}/api/orders/save`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
+  console.log('[saveCompletedOrderToBackend] endpoint:', ORDERS_SAVE_ENDPOINT);
+  console.log('[saveCompletedOrderToBackend] payload:', payload);
 
-  if (!res.ok) {
-    throw new Error(`Server error: ${res.status}`);
+  let response: Response;
+
+  try {
+    response = await fetch(ORDERS_SAVE_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    console.error('[saveCompletedOrderToBackend] fetch error:', error);
+    throw new Error('Backend konnte nicht erreicht werden');
   }
 
-  const data: OrderSaveResponse = await res.json();
-  if (!data.ok) {
-    throw new Error('Server returned ok: false');
+  console.log('[saveCompletedOrderToBackend] response status:', response.status);
+
+  let text = '';
+
+  try {
+    text = await response.text();
+  } catch (error) {
+    console.error('[saveCompletedOrderToBackend] response read error:', error);
+    throw new Error('Serverantwort konnte nicht gelesen werden');
+  }
+
+  let data: OrderSaveResponse | null = null;
+
+  try {
+    data = text ? JSON.parse(text) as OrderSaveResponse : null;
+  } catch (error) {
+    console.error('[saveCompletedOrderToBackend] invalid json:', text);
+    console.error('[saveCompletedOrderToBackend] json parse error:', error);
+    throw new Error('Ungültige Serverantwort');
+  }
+
+  if (!response.ok || !data?.ok) {
+    console.error('[saveCompletedOrderToBackend] save failed:', {
+      status: response.status,
+      data,
+      rawText: text,
+    });
+    throw new Error('Die Bestellung konnte nicht gespeichert werden');
   }
 
   return data;
