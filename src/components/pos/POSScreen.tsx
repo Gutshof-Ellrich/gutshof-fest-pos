@@ -115,12 +115,84 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     setShowPayment(true);
   };
 
+  const finalizeOrder = useCallback(async (order: Order) => {
+    setIsSavingOrder(true);
+    setPendingOrder(order);
+
+    try {
+      const payload = buildOrderPayload(order, categories);
+      await saveCompletedOrderToBackend(payload);
+    } catch {
+      setIsSavingOrder(false);
+      toast.error('Fehler beim Speichern der Bestellung. Bitte erneut versuchen.', {
+        duration: 10000,
+      });
+      return; // Do NOT print, do NOT clear cart
+    }
+
+    // Save succeeded → continue with existing flow
+    setIsSavingOrder(false);
+    setPendingOrder(null);
+
+    addOrder(order);
+
+    if (!order.isPaid && order.serviceType === 'service' && order.tableId && order.tableName) {
+      addToTableTab(order.tableId, order.tableName, order);
+    }
+
+    // Print to all matching LAN printers
+    if (order.items.length > 0) {
+      printOrderToMatchingPrinters(order, lanPrinters, role).then(({ failed }) => {
+        failed.forEach((name) => {
+          toast.error(`Druck fehlgeschlagen: ${name}`, {
+            action: {
+              label: 'Erneut drucken',
+              onClick: () => printOrderToMatchingPrinters(order, lanPrinters, role),
+            },
+          });
+        });
+      });
+    }
+
+    clearCart();
+    setShowPayment(false);
+    setSelectedCategoryId(null);
+    setSelectedTableId(null);
+    setSelectedTableName(null);
+
+    const tableInfo = order.serviceType === 'service' && order.tableName
+      ? ` - Tisch ${order.tableName}`
+      : '';
+
+    if (order.isPaid) {
+      const togoInfo = order.serviceType === 'togo' && order.togoNumber !== undefined ? ` | ToGo-Nr: ${order.togoNumber}` : '';
+      toast.success(
+        `Bestellung ${order.serviceType === 'togo' ? 'TO GO' : 'SERVICE'}${tableInfo} abgeschlossen`,
+        {
+          description: `${order.grandTotal.toFixed(2).replace('.', ',')} € - ${order.paymentMethod === 'cash' ? 'Bar' : 'Karte'}${togoInfo}`,
+        }
+      );
+    } else {
+      toast.success(
+        `Bestellung auf Tisch ${order.tableName} gebucht`,
+        {
+          description: `${order.grandTotal.toFixed(2).replace('.', ',')} € - Zahlung später`,
+        }
+      );
+    }
+  }, [categories, lanPrinters, role, addOrder, addToTableTab, clearCart]);
+
+  const handleRetryOrder = useCallback(() => {
+    if (pendingOrder) {
+      finalizeOrder(pendingOrder);
+    }
+  }, [pendingOrder, finalizeOrder]);
+
   const handlePaymentConfirm = async (paymentMethod: PaymentMethod, payNow: boolean, amountPaid?: number) => {
     const itemsTotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
     const depositSaldo = (deposit.newDeposits - deposit.returnedDeposits) * depositPerGlass;
     const grandTotal = itemsTotal + depositSaldo;
 
-    // Assign ToGo number only for paid ToGo orders
     const togoNumber = (serviceType === 'togo' && payNow) ? getNextTogoNumber() : undefined;
 
     const order: Order = {
@@ -142,52 +214,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
       togoNumber,
     };
 
-    addOrder(order);
-
-    if (!payNow && serviceType === 'service' && selectedTableId && selectedTableName) {
-      addToTableTab(selectedTableId, selectedTableName, order);
-    }
-    
-    // Print to all matching LAN printers
-    if (order.items.length > 0) {
-      printOrderToMatchingPrinters(order, lanPrinters, role).then(({ failed }) => {
-        failed.forEach((name) => {
-          toast.error(`Druck fehlgeschlagen: ${name}`, {
-            action: {
-              label: 'Erneut drucken',
-              onClick: () => printOrderToMatchingPrinters(order, lanPrinters, role),
-            },
-          });
-        });
-      });
-    }
-    
-    clearCart();
-    setShowPayment(false);
-    setSelectedCategoryId(null);
-    setSelectedTableId(null);
-    setSelectedTableName(null);
-
-    const tableInfo = serviceType === 'service' && selectedTableName 
-      ? ` - Tisch ${selectedTableName}` 
-      : '';
-
-    if (payNow) {
-      const togoInfo = serviceType === 'togo' && togoNumber !== undefined ? ` | ToGo-Nr: ${togoNumber}` : '';
-      toast.success(
-        `Bestellung ${serviceType === 'togo' ? 'TO GO' : 'SERVICE'}${tableInfo} abgeschlossen`,
-        {
-          description: `${grandTotal.toFixed(2).replace('.', ',')} € - ${paymentMethod === 'cash' ? 'Bar' : 'Karte'}${togoInfo}`,
-        }
-      );
-    } else {
-      toast.success(
-        `Bestellung auf Tisch ${selectedTableName} gebucht`,
-        {
-          description: `${grandTotal.toFixed(2).replace('.', ',')} € - Zahlung später`,
-        }
-      );
-    }
+    await finalizeOrder(order);
   };
 
   const roleTitle = role === 'bar' ? 'Getränke' : role === 'food' ? 'Speisen' : 'Komplett';
