@@ -7,6 +7,7 @@ import {
   SumupPhase,
   SumupStatusResponse,
 } from '@/services/sumupService';
+import type { SoloDeviceConfig } from '@/services/sumupService';
 import { toast } from 'sonner';
 
 type CardPaymentState = 'idle' | 'starting' | 'polling' | 'final';
@@ -83,7 +84,7 @@ const PaymentDialog = ({
 
   const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPollingRef = useRef(false);
-  const deviceUrlRef = useRef<string>('');
+  const deviceRef = useRef<SoloDeviceConfig | null>(null);
 
   const itemsTotal = isOpen ? items.reduce((sum, item) => sum + item.product.price * item.quantity, 0) : 0;
   const depositNew = deposit.newDeposits * depositPerGlass;
@@ -117,7 +118,7 @@ const PaymentDialog = ({
       const doPoll = async () => {
         if (!isPollingRef.current) return;
         try {
-          const data: SumupStatusResponse = await pollSumupCheckoutStatus(txId, deviceUrlRef.current);
+          const data: SumupStatusResponse = await pollSumupCheckoutStatus(txId, deviceRef.current!);
 
           if (!isPollingRef.current) return; // stopped while awaiting
 
@@ -193,7 +194,7 @@ const PaymentDialog = ({
       return;
     }
 
-    deviceUrlRef.current = soloDevice.url;
+    deviceRef.current = soloDevice;
     setCardState('starting');
     setCanMarkPaid(false);
     setLastPaymentError('');
@@ -204,7 +205,7 @@ const PaymentDialog = ({
     const orderId = `order-${Date.now()}`;
 
     try {
-      const result = await startSumupPayment(grandTotal, orderId, soloDevice.url);
+      const result = await startSumupPayment(grandTotal, orderId, soloDevice);
       const txId = result.orderId || result.clientTransactionId || orderId;
       setClientTransactionId(txId);
       setCardState('polling');

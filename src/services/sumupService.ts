@@ -1,22 +1,31 @@
-/** Solo device for Essen & Komplett */
-export const SOLO_FOOD_URL = 'http://192.168.188.200:3444';
+/** Shared Raspberry Pi backend URL for all SumUp devices */
+export const SUMUP_BASE_URL = 'http://192.168.188.200:3444';
 
-/** Solo device for Bar */
-export const SOLO_BAR_URL = 'http://192.168.188.201:3444';
+export interface SoloDeviceConfig {
+  baseUrl: string;
+  deviceKey: string;
+  label: string;
+}
+
+const SOLO_FOOD: SoloDeviceConfig = {
+  baseUrl: SUMUP_BASE_URL,
+  deviceKey: 'solo-food',
+  label: 'Essen / Komplett',
+};
+
+const SOLO_BAR: SoloDeviceConfig = {
+  baseUrl: SUMUP_BASE_URL,
+  deviceKey: 'solo-bar',
+  label: 'Bar',
+};
 
 /**
- * Returns the assigned SumUp Solo device for a given role.
- * - 'food' / 'combined' → existing Solo (SOLO_FOOD_URL)
- * - 'bar' → dedicated Bar Solo (SOLO_BAR_URL)
- * - anything else → null (no device)
+ * Returns the assigned SumUp Solo device config for a given role.
+ * Both devices share the same Raspberry Pi backend; they differ by deviceKey.
  */
-export function getAssignedSoloDevice(role: string): { url: string } | null {
-  if (role === 'food' || role === 'combined') {
-    return { url: SOLO_FOOD_URL };
-  }
-  if (role === 'bar') {
-    return { url: SOLO_BAR_URL };
-  }
+export function getAssignedSoloDevice(role: string): SoloDeviceConfig | null {
+  if (role === 'food' || role === 'combined') return SOLO_FOOD;
+  if (role === 'bar') return SOLO_BAR;
   return null;
 }
 
@@ -48,15 +57,16 @@ export interface SumupStatusResponse {
 export async function startSumupPayment(
   amount: number,
   orderId: string,
-  baseUrl: string
+  device: SoloDeviceConfig
 ): Promise<{ ok: boolean; clientTransactionId?: string; orderId?: string }> {
-  const res = await fetch(`${baseUrl}/api/payments/sumup/start`, {
+  const res = await fetch(`${device.baseUrl}/api/payments/sumup/start`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       orderId,
       amount,
       description: 'SeliCash Kartenzahlung',
+      deviceKey: device.deviceKey,
     }),
   });
 
@@ -74,10 +84,10 @@ export async function startSumupPayment(
 
 export async function pollSumupCheckoutStatus(
   orderId: string,
-  baseUrl: string
+  device: SoloDeviceConfig
 ): Promise<SumupStatusResponse> {
   const res = await fetch(
-    `${baseUrl}/api/sumup/checkout-status?orderId=${encodeURIComponent(orderId)}`
+    `${device.baseUrl}/api/sumup/checkout-status?orderId=${encodeURIComponent(orderId)}&deviceKey=${encodeURIComponent(device.deviceKey)}`
   );
 
   if (!res.ok) {
