@@ -8,8 +8,16 @@ import DataSyncManagement from './DataSyncManagement';
 import BackgroundImageUpload from './BackgroundImageUpload';
 import { restoreUmlauts } from '@/lib/searchUtils';
 
+interface MasterDataSyncState {
+  serverOnline: boolean;
+  isSaving: boolean;
+  saveToServer: () => Promise<void>;
+  loadFromServer: (showErrors?: boolean) => Promise<void>;
+}
+
 interface AdminScreenProps {
   onLogout: () => void;
+  masterDataSync: MasterDataSyncState;
 }
 
 type AdminTab = 'products' | 'categories' | 'tables' | 'deposit' | 'printers' | 'statistics' | 'sync' | 'design' | 'migration' | 'help' | 'security';
