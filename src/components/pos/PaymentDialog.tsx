@@ -83,6 +83,7 @@ const PaymentDialog = ({
 
   const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPollingRef = useRef(false);
+  const deviceUrlRef = useRef<string>('');
 
   const itemsTotal = isOpen ? items.reduce((sum, item) => sum + item.product.price * item.quantity, 0) : 0;
   const depositNew = deposit.newDeposits * depositPerGlass;
@@ -116,7 +117,7 @@ const PaymentDialog = ({
       const doPoll = async () => {
         if (!isPollingRef.current) return;
         try {
-          const data: SumupStatusResponse = await pollSumupCheckoutStatus(txId);
+          const data: SumupStatusResponse = await pollSumupCheckoutStatus(txId, deviceUrlRef.current);
 
           if (!isPollingRef.current) return; // stopped while awaiting
 
@@ -186,12 +187,13 @@ const PaymentDialog = ({
 
     const soloDevice = getAssignedSoloDevice(role);
     if (!soloDevice) {
-      // No Solo device assigned for this role (e.g. Bar) — just select card, no terminal flow
+      // No Solo device assigned for this role — just select card, no terminal flow
       setCanMarkPaid(true);
       setCardState('idle');
       return;
     }
 
+    deviceUrlRef.current = soloDevice.url;
     setCardState('starting');
     setCanMarkPaid(false);
     setLastPaymentError('');
@@ -202,7 +204,7 @@ const PaymentDialog = ({
     const orderId = `order-${Date.now()}`;
 
     try {
-      const result = await startSumupPayment(grandTotal, orderId);
+      const result = await startSumupPayment(grandTotal, orderId, soloDevice.url);
       const txId = result.orderId || result.clientTransactionId || orderId;
       setClientTransactionId(txId);
       setCardState('polling');
