@@ -1,20 +1,24 @@
-export const LOCAL_BACKEND_URL = 'http://192.168.188.200:3444';
+/** Solo device for Essen & Komplett */
+export const SOLO_FOOD_URL = 'http://192.168.188.200:3444';
+
+/** Solo device for Bar */
+export const SOLO_BAR_URL = 'http://192.168.188.201:3444';
 
 /**
- * Determines whether the existing SumUp Solo device should be used for the given role.
- * Currently: 'food' and 'combined' use the existing Solo.
- * 'bar' will get its own device later — returns null for now.
+ * Returns the assigned SumUp Solo device for a given role.
+ * - 'food' / 'combined' → existing Solo (SOLO_FOOD_URL)
+ * - 'bar' → dedicated Bar Solo (SOLO_BAR_URL)
+ * - anything else → null (no device)
  */
 export function getAssignedSoloDevice(role: string): { url: string } | null {
   if (role === 'food' || role === 'combined') {
-    return { url: LOCAL_BACKEND_URL };
+    return { url: SOLO_FOOD_URL };
   }
-  // Bar: no device assigned yet
+  if (role === 'bar') {
+    return { url: SOLO_BAR_URL };
+  }
   return null;
 }
-
-const SUMUP_START_ENDPOINT = `${LOCAL_BACKEND_URL}/api/payments/sumup/start`;
-const SUMUP_STATUS_ENDPOINT = `${LOCAL_BACKEND_URL}/api/sumup/checkout-status`;
 
 export type SumupPhase =
   | 'waiting_for_card'
@@ -43,9 +47,10 @@ export interface SumupStatusResponse {
 
 export async function startSumupPayment(
   amount: number,
-  orderId: string
+  orderId: string,
+  baseUrl: string
 ): Promise<{ ok: boolean; clientTransactionId?: string; orderId?: string }> {
-  const res = await fetch(SUMUP_START_ENDPOINT, {
+  const res = await fetch(`${baseUrl}/api/payments/sumup/start`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -68,10 +73,11 @@ export async function startSumupPayment(
 }
 
 export async function pollSumupCheckoutStatus(
-  orderId: string
+  orderId: string,
+  baseUrl: string
 ): Promise<SumupStatusResponse> {
   const res = await fetch(
-    `${SUMUP_STATUS_ENDPOINT}?orderId=${encodeURIComponent(orderId)}`
+    `${baseUrl}/api/sumup/checkout-status?orderId=${encodeURIComponent(orderId)}`
   );
 
   if (!res.ok) {
