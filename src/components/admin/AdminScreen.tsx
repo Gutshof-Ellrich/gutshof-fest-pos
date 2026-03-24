@@ -8,13 +8,21 @@ import DataSyncManagement from './DataSyncManagement';
 import BackgroundImageUpload from './BackgroundImageUpload';
 import { restoreUmlauts } from '@/lib/searchUtils';
 
+interface MasterDataSyncState {
+  serverOnline: boolean;
+  isSaving: boolean;
+  saveToServer: () => Promise<void>;
+  loadFromServer: (showErrors?: boolean) => Promise<void>;
+}
+
 interface AdminScreenProps {
   onLogout: () => void;
+  masterDataSync: MasterDataSyncState;
 }
 
 type AdminTab = 'products' | 'categories' | 'tables' | 'deposit' | 'printers' | 'statistics' | 'sync' | 'design' | 'migration' | 'help' | 'security';
 
-const AdminScreen = ({ onLogout }: AdminScreenProps) => {
+const AdminScreen = ({ onLogout, masterDataSync }: AdminScreenProps) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('statistics');
   
   const {
@@ -114,12 +122,33 @@ const AdminScreen = ({ onLogout }: AdminScreenProps) => {
               Admin
             </span>
           </div>
-          <button
-            onClick={onLogout}
-            className="touch-btn-secondary text-base py-2 px-4 min-h-0"
-          >
-            HOME
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Server status indicator */}
+            <div className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full ${
+              masterDataSync.serverOnline 
+                ? 'bg-green-100 text-green-700' 
+                : 'bg-red-100 text-red-700'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${
+                masterDataSync.serverOnline ? 'bg-green-500' : 'bg-red-500'
+              }`} />
+              {masterDataSync.serverOnline ? 'Server verbunden' : 'Server offline'}
+            </div>
+            {/* Save button */}
+            <button
+              onClick={masterDataSync.saveToServer}
+              disabled={masterDataSync.isSaving}
+              className="touch-btn-primary text-base py-2 px-4 min-h-0 disabled:opacity-50"
+            >
+              {masterDataSync.isSaving ? 'Speichert…' : 'Zentral speichern'}
+            </button>
+            <button
+              onClick={onLogout}
+              className="touch-btn-secondary text-base py-2 px-4 min-h-0"
+            >
+              HOME
+            </button>
+          </div>
         </div>
       </header>
 

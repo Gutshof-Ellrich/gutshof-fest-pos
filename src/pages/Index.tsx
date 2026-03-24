@@ -4,10 +4,12 @@ import LoginScreen from '@/components/LoginScreen';
 import POSScreen from '@/components/pos/POSScreen';
 import AdminScreen from '@/components/admin/AdminScreen';
 import AdminPinDialog from '@/components/AdminPinDialog';
+import { useMasterDataSync } from '@/hooks/useMasterDataSync';
 
 const Index = () => {
   const { currentRole, setRole, logout } = useAppStore();
   const [showPinDialog, setShowPinDialog] = useState(false);
+  const masterDataSync = useMasterDataSync();
 
   const handleLogin = (role: UserRole) => {
     if (role === 'admin') {
@@ -44,7 +46,7 @@ const Index = () => {
 
   // Admin role
   if (currentRole === 'admin') {
-    return <AdminScreen onLogout={handleLogout} />;
+    return <AdminScreen onLogout={handleLogout} masterDataSync={masterDataSync} />;
   }
 
   // Bar, Food, or Combined role
