@@ -281,10 +281,9 @@ function listOrders(limit = 100) {
   }));
 }
 
-function getSummary(dateFrom, dateTo) {
+function buildWhereClause(dateFrom, dateTo) {
   let where = "";
   const params = [];
-
   if (dateFrom && dateTo) {
     where = "WHERE datetime(created_at) BETWEEN datetime(?) AND datetime(?)";
     params.push(dateFrom, dateTo);
@@ -295,6 +294,11 @@ function getSummary(dateFrom, dateTo) {
     where = "WHERE datetime(created_at) <= datetime(?)";
     params.push(dateTo);
   }
+  return { where, params };
+}
+
+function getSummary(dateFrom, dateTo) {
+  const { where, params } = buildWhereClause(dateFrom, dateTo);
 
   const totals = db.prepare(`
     SELECT
@@ -318,9 +322,150 @@ function getSummary(dateFrom, dateTo) {
     LIMIT 20
   `).all(...params);
 
+  return { totals, topProducts };
+}
+
+function getDetailedStats(dateFrom, dateTo) {
+  const { where, params } = buildWhereClause(dateFrom, dateTo);
+  const orderSubquery = where ? `SELECT id FROM orders ${where}` : `SELECT id FROM orders`;
+
+  const totals = db.prepare(`
+    SELECT
+      COUNT(*) AS orders_count,
+      COALESCE(SUM(total_cents), 0) AS total_cents,
+      COALESCE(SUM(deposit_cents), 0) AS deposit_cents,
+      COALESCE(SUM(CASE WHEN payment_method = 'cash' THEN total_cents ELSE 0 END), 0) AS cash_cents,
+      COALESCE(SUM(CASE WHEN payment_method = 'card' THEN total_cents ELSE 0 END), 0) AS card_cents,
+      COALESCE(SUM(CASE WHEN payment_method = 'cash' THEN 1 ELSE 0 END), 0) AS cash_count,
+      COALESCE(SUM(CASE WHEN payment_method = 'card' THEN 1 ELSE 0 END), 0) AS card_count
+    FROM orders ${where}
+  `).get(...params);
+
+  const byRole = db.prepare(`
+    SELECT
+      COALESCE(role_name, 'unknown') AS role_name,
+      COUNT(*) AS orders_count,
+      COALESCE(SUM(total_cents), 0) AS total_cents,
+      COALESCE(SUM(CASE WHEN payment_method = 'cash' THEN total_cents ELSE 0 END), 0) AS cash_cents,
+      COALESCE(SUM(CASE WHEN payment_method = 'card' THEN total_cents ELSE 0 END), 0) AS card_cents,
+      COALESCE(SUM(CASE WHEN payment_method = 'cash' THEN 1 ELSE 0 END), 0) AS cash_count,
+      COALESCE(SUM(CASE WHEN payment_method = 'card' THEN 1 ELSE 0 END), 0) AS card_count
+    FROM orders ${where}
+    GROUP BY role_name
+    ORDER BY total_cents DESC
+  `).all(...params);
+
+  const topProductsFood = db.prepare(`
+    SELECT
+      oi.product_name,
+      oi.category_name,
+      ROUND(SUM(oi.quantity), 2) AS qty,
+      COALESCE(SUM(oi.line_total_cents), 0) AS revenue_cents
+    FROM order_items oi
+    WHERE oi.order_id IN (${orderSubquery})
+      AND oi.category_name != ''
+      AND oi.order_id IN (
+        SELECT o2.id FROM orders o2
+        JOIN order_items oi2 ON oi2.order_id = o2.id
+        WHERE oi2.product_id = oi.product_id
+      )
+      AND oi.category_name NOT IN (
+        SELECT DISTINCT oi3.category_name FROM order_items oi3
+        WHERE oi3.category_name LIKE '%Wein%' OR oi3.category_name LIKE '%Bier%'
+          OR oi3.category_name LIKE '%Saft%' OR oi3.category_name LIKE '%Wasser%'
+          OR oi3.category_name LIKE '%Cocktail%' OR oi3.category_name LIKE '%Getränk%'
+          OR oi3.category_name LIKE '%Limo%' OR oi3.category_name LIKE '%Schnaps%'
+          OR oi3.category_name LIKE '%Drink%'
+      )
+    GROUP BY oi.product_name
+    ORDER BY qty DESC
+    LIMIT 20
+  `).all(...params);
+
+  const topProductsDrinks = db.prepare(`
+    SELECT
+      oi.product_name,
+      oi.category_name,
+      ROUND(SUM(oi.quantity), 2) AS qty,
+      COALESCE(SUM(oi.line_total_cents), 0) AS revenue_cents
+    FROM order_items oi
+    WHERE oi.order_id IN (${orderSubquery})
+      AND oi.category_name != ''
+      AND (
+        oi.category_name LIKE '%Wein%' OR oi.category_name LIKE '%Bier%'
+        OR oi.category_name LIKE '%Saft%' OR oi.category_name LIKE '%Wasser%'
+        OR oi.category_name LIKE '%Cocktail%' OR oi.category_name LIKE '%Getränk%'
+        OR oi.category_name LIKE '%Limo%' OR oi.category_name LIKE '%Schnaps%'
+        OR oi.category_name LIKE '%Drink%'
+      )
+    GROUP BY oi.product_name
+    ORDER BY qty DESC
+    LIMIT 20
+  `).all(...params);
+
+  const allProducts = db.prepare(`
+    SELECT
+      oi.product_name,
+      oi.category_name,
+      ROUND(SUM(oi.quantity), 2) AS qty,
+      COALESCE(SUM(oi.line_total_cents), 0) AS revenue_cents
+    FROM order_items oi
+    WHERE oi.order_id IN (${orderSubquery})
+    GROUP BY oi.product_name, oi.category_name
+    ORDER BY qty DESC
+  `).all(...params);
+
+  const hourly = db.prepare(`
+    SELECT
+      CAST(strftime('%H', created_at) AS INTEGER) AS hour,
+      COUNT(*) AS orders_count,
+      COALESCE(SUM(total_cents), 0) AS total_cents
+    FROM orders ${where}
+    GROUP BY hour
+    ORDER BY hour ASC
+  `).all(...params);
+
+  const hourlyProducts = db.prepare(`
+    SELECT
+      CAST(strftime('%H', o.created_at) AS INTEGER) AS hour,
+      oi.product_name,
+      ROUND(SUM(oi.quantity), 2) AS qty
+    FROM order_items oi
+    JOIN orders o ON o.id = oi.order_id
+    ${where ? `${where}` : ""}
+    GROUP BY hour, oi.product_name
+    ORDER BY hour ASC, qty DESC
+  `).all(...params);
+
+  const hourlyMap = {};
+  for (const row of hourlyProducts) {
+    if (!hourlyMap[row.hour]) hourlyMap[row.hour] = [];
+    if (hourlyMap[row.hour].length < 5) {
+      hourlyMap[row.hour].push({ product_name: row.product_name, qty: row.qty });
+    }
+  }
+
+  const daily = db.prepare(`
+    SELECT
+      date(created_at) AS day,
+      COUNT(*) AS orders_count,
+      COALESCE(SUM(total_cents), 0) AS total_cents
+    FROM orders ${where}
+    GROUP BY day
+    ORDER BY day DESC
+  `).all(...params);
+
   return {
     totals,
-    topProducts
+    byRole,
+    topProductsFood,
+    topProductsDrinks,
+    allProducts,
+    hourly: hourly.map(h => ({
+      ...h,
+      topProducts: hourlyMap[h.hour] || []
+    })),
+    daily
   };
 }
 
@@ -348,6 +493,7 @@ module.exports = {
   saveOrder,
   listOrders,
   getSummary,
+  getDetailedStats,
   createBackup,
   pruneBackups,
   paths: {
