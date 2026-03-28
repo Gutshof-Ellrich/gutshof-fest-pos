@@ -6,6 +6,8 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const sumupStatusRoute = require("./sumup-status-route.cjs");
+const posOrdersRoute = require("./pos-orders-route.cjs");
+const cors = require("cors");
 
 function cryptoRandomId() {
   if (crypto.randomUUID) return crypto.randomUUID();
@@ -13,7 +15,17 @@ function cryptoRandomId() {
 }
 
 const app = express();
+
+app.use(cors({
+  origin: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
+  optionsSuccessStatus: 204,
+}));
+
+
 app.use(express.json({ limit: "500kb" }));
+app.use(posOrdersRoute);
 
 // ----
 // SUMUP
@@ -101,23 +113,35 @@ async function sumupFetch(endpoint, { method = "GET", body, apiKey }) {
 // ------------------------------------------------------------
 // CORS (Safari / iPad / LAN)
 // ------------------------------------------------------------
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
+// app.use((req, res, next) => {
+//  const origin = req.headers.origin;
 
-  if (origin) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Vary", "Origin");
-    res.setHeader(
-      "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, X-Requested-With"
-    );
-    res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-  }
+//  if (origin) {
+//    res.header("Access-Control-Allow-Origin", origin);
+//    res.header("Vary", "Origin");
+//  } else {
+//    res.header("Access-Control-Allow-Origin", "*");
+//  }
 
-  if (req.method === "OPTIONS") return res.sendStatus(204);
-  next();
-});
+//  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+//  res.header(
+//    "Access-Control-Allow-Headers",
+//    "Content-Type, Authorization, X-Requested-With, Accept, Origin"
+//  );
+//  res.header("Access-Control-Max-Age", "86400");
 
+  // wichtig für moderne Browser bei Requests ins lokale/private Netz
+//  if (req.headers["access-control-request-private-network"] === "true") {
+//    res.header("Access-Control-Allow-Private-Network", "true");
+//  }
+
+//  if (req.method === "OPTIONS") {
+//    console.log("[CORS PREFLIGHT]", req.originalUrl, req.headers);
+//    return res.sendStatus(204);
+//  }
+
+//  next();
+// });
 
 app.use(sumupStatusRoute);
 

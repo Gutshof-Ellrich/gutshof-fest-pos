@@ -28,3 +28,10 @@ receipt-archive.json
 *.backup-*
 *.bak
 *.bak_*
+
+# POS Laufzeitdaten (NICHT versionieren)
+data/
+backup/
+
+# Optional: lokale Stammdaten (nur wenn NICHT gewünscht im Repo)
+masterdata.json
