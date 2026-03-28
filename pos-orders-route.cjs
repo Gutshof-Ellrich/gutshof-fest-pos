@@ -3,6 +3,7 @@ const {
   saveOrder,
   listOrders,
   getSummary,
+  getDetailedStats,
   createBackup,
   pruneBackups,
   paths
@@ -86,6 +87,18 @@ router.get("/api/stats/summary", (req, res) => {
       ok: false,
       error: err.message || String(err)
     });
+  }
+});
+
+router.get("/api/stats/detailed", (req, res) => {
+  try {
+    const dateFrom = req.query.dateFrom || req.query.date_from || "";
+    const dateTo = req.query.dateTo || req.query.date_to || "";
+    const stats = getDetailedStats(dateFrom, dateTo);
+    res.json({ ok: true, ...stats });
+  } catch (err) {
+    console.error("[GET /api/stats/detailed] error:", err);
+    res.status(500).json({ ok: false, error: err.message || String(err) });
   }
 });
 
