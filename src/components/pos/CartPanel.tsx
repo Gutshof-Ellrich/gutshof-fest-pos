@@ -33,6 +33,7 @@ const CartPanel = ({
   selectedTableName,
   tables,
   showDeposit = true,
+  categories,
   onUpdateQuantity,
   onRemoveItem,
   onSetNewDeposits,
@@ -41,8 +42,11 @@ const CartPanel = ({
   onSelectTable,
   onCheckout,
   onClearCart,
+  onSetItemNote,
 }: CartPanelProps) => {
   const [showTableSelector, setShowTableSelector] = useState(false);
+  const [editingNoteFor, setEditingNoteFor] = useState<string | null>(null);
+  const [noteText, setNoteText] = useState('');
   const togoCounter = useAppStore((s) => s.togoCounter);
   const nextTogoNumber = (togoCounter + 1) % 1001;
 
