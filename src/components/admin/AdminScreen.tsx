@@ -260,6 +260,8 @@ const AdminScreen = ({ onLogout, masterDataSync }: AdminScreenProps) => {
           </div>
         )}
 
+        {activeTab === 'history' && <HistoricalStatistics />}
+
         {activeTab === 'deposit' && (
           <div className="space-y-6 animate-fade-in">
             <h2 className="font-display text-2xl font-bold text-foreground">Pfand-Einstellungen</h2>
