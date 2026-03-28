@@ -22,6 +22,7 @@ export interface ReceiptItem {
   name: string;
   unitPrice: number;
   lineTotal: number;
+  note?: string;
 }
 
 export interface ReceiptPayload {

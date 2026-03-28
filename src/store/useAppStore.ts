@@ -27,6 +27,7 @@ export interface Category {
 export interface CartItem {
   product: Product;
   quantity: number;
+  note?: string;
 }
 
 export interface DepositInfo {
@@ -93,6 +94,7 @@ interface AppState {
   addToCart: (product: Product) => void;
   removeFromCart: (productId: string) => void;
   updateCartQuantity: (productId: string, quantity: number) => void;
+  setCartItemNote: (productId: string, note: string) => void;
   clearCart: () => void;
 
   // Deposit
@@ -257,6 +259,11 @@ export const useAppStore = create<AppState>()(
           ),
         };
       }),
+      setCartItemNote: (productId, note) => set((state) => ({
+        cart: state.cart.map((item) =>
+          item.product.id === productId ? { ...item, note: note || undefined } : item
+        ),
+      })),
       clearCart: () => set({ cart: [], deposit: { newDeposits: 0, returnedDeposits: 0, depositValue: get().depositPerGlass } }),
 
       // Deposit

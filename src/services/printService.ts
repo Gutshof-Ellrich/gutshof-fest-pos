@@ -116,6 +116,10 @@ export function buildReceiptText(receipt: ReceiptPayload, printer: LanPrinter): 
         }
       });
     }
+    // Print note directly under the item if present
+    if (item.note) {
+      lines.push(`  >> ${item.note}`);
+    }
   });
 
   lines.push('-'.repeat(w));
@@ -158,6 +162,7 @@ export function buildReceiptPayload(order: Order): ReceiptPayload {
       name: item.product.name,
       unitPrice: item.product.price,
       lineTotal: item.product.price * item.quantity,
+      note: item.note,
     })),
     totals: { grandTotal: order.grandTotal },
     payment: {

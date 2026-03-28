@@ -60,6 +60,7 @@ export function buildOrderPayload(
       deposit: item.product.hasDeposit
         ? Number(order.deposit?.depositValue ?? (item.product as any).depositValue ?? 0)
         : 0,
+      note: item.note,
     })),
     payment: order.paymentMethod === 'card'
       ? {
