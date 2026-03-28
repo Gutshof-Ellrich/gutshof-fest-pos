@@ -67,7 +67,8 @@ const AdminScreen = ({ onLogout, masterDataSync }: AdminScreenProps) => {
   });
 
   const tabs: { id: AdminTab; label: string }[] = [
-    { id: 'statistics', label: 'Statistiken' },
+    { id: 'statistics', label: 'Live-Statistik' },
+    { id: 'history', label: 'Historische Statistik' },
     { id: 'products', label: 'Produkte' },
     { id: 'categories', label: 'Kategorien' },
     { id: 'tables', label: 'Tische' },
