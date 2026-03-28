@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { CartItem, DepositInfo, ServiceType, Table, useAppStore } from '@/store/useAppStore';
+import { CartItem, Category, DepositInfo, ServiceType, Table, useAppStore } from '@/store/useAppStore';
 import TableSelector from './TableSelector';
+import { MessageSquare, X } from 'lucide-react';
 
 interface CartPanelProps {
   items: CartItem[];
@@ -11,6 +12,7 @@ interface CartPanelProps {
   selectedTableName: string | null;
   tables: Table[];
   showDeposit?: boolean;
+  categories?: Category[];
   onUpdateQuantity: (productId: string, quantity: number) => void;
   onRemoveItem: (productId: string) => void;
   onSetNewDeposits: (count: number) => void;
@@ -19,6 +21,7 @@ interface CartPanelProps {
   onSelectTable: (tableId: string | null, tableName: string | null) => void;
   onCheckout: () => void;
   onClearCart: () => void;
+  onSetItemNote?: (productId: string, note: string) => void;
 }
 
 const CartPanel = ({
