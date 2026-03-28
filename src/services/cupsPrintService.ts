@@ -65,6 +65,9 @@ export function buildOrderBon(order: Order, bonType: BonType = 'customer'): stri
     order.items.forEach((item: CartItem) => {
       const total = (item.product.price * item.quantity).toFixed(2);
       lines.push(`${item.quantity} x ${item.product.name} ${total} EUR`);
+      if (item.note) {
+        lines.push(`  >> ${item.note}`);
+      }
     });
   }
 
