@@ -20,7 +20,7 @@ interface AdminScreenProps {
   masterDataSync: MasterDataSyncState;
 }
 
-type AdminTab = 'products' | 'categories' | 'tables' | 'deposit' | 'printers' | 'statistics' | 'sync' | 'design' | 'migration' | 'help' | 'security';
+type AdminTab = 'products' | 'categories' | 'tables' | 'deposit' | 'printers' | 'statistics' | 'history' | 'sync' | 'design' | 'migration' | 'help' | 'security';
 
 const AdminScreen = ({ onLogout, masterDataSync }: AdminScreenProps) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('statistics');
