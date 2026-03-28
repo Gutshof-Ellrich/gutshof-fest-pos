@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { CartItem, DepositInfo, ServiceType, Table, useAppStore } from '@/store/useAppStore';
+import { CartItem, Category, DepositInfo, ServiceType, Table, useAppStore } from '@/store/useAppStore';
 import TableSelector from './TableSelector';
+import { MessageSquare, X } from 'lucide-react';
 
 interface CartPanelProps {
   items: CartItem[];
@@ -11,6 +12,7 @@ interface CartPanelProps {
   selectedTableName: string | null;
   tables: Table[];
   showDeposit?: boolean;
+  categories?: Category[];
   onUpdateQuantity: (productId: string, quantity: number) => void;
   onRemoveItem: (productId: string) => void;
   onSetNewDeposits: (count: number) => void;
@@ -19,6 +21,7 @@ interface CartPanelProps {
   onSelectTable: (tableId: string | null, tableName: string | null) => void;
   onCheckout: () => void;
   onClearCart: () => void;
+  onSetItemNote?: (productId: string, note: string) => void;
 }
 
 const CartPanel = ({
@@ -30,6 +33,7 @@ const CartPanel = ({
   selectedTableName,
   tables,
   showDeposit = true,
+  categories,
   onUpdateQuantity,
   onRemoveItem,
   onSetNewDeposits,
@@ -38,8 +42,11 @@ const CartPanel = ({
   onSelectTable,
   onCheckout,
   onClearCart,
+  onSetItemNote,
 }: CartPanelProps) => {
   const [showTableSelector, setShowTableSelector] = useState(false);
+  const [editingNoteFor, setEditingNoteFor] = useState<string | null>(null);
+  const [noteText, setNoteText] = useState('');
   const togoCounter = useAppStore((s) => s.togoCounter);
   const nextTogoNumber = (togoCounter + 1) % 1001;
 
@@ -109,34 +116,88 @@ const CartPanel = ({
           </div>
         ) : (
           <div className="space-y-1 md:space-y-2">
-            {items.map((item) => (
-              <div key={item.product.id} className="cart-item p-1.5 md:p-2">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-foreground text-sm md:text-base truncate">{item.product.name}</p>
-                  <p className="text-xs md:text-sm text-muted-foreground">
-                    {item.product.price.toFixed(2).replace('.', ',')} € × {item.quantity}
-                  </p>
+            {items.map((item) => {
+              const isFood = categories?.find(c => c.id === item.product.categoryId)?.type === 'food';
+              const isEditingNote = editingNoteFor === item.product.id;
+              return (
+                <div key={item.product.id} className="cart-item p-1.5 md:p-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-foreground text-sm md:text-base truncate">{item.product.name}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">
+                      {item.product.price.toFixed(2).replace('.', ',')} € × {item.quantity}
+                    </p>
+                    {/* Note display */}
+                    {item.note && !isEditingNote && (
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <span className="text-xs text-amber-700 italic truncate">» {item.note}</span>
+                        <button
+                          onClick={() => { setEditingNoteFor(item.product.id); setNoteText(item.note || ''); }}
+                          className="text-xs text-muted-foreground hover:text-foreground"
+                        >✎</button>
+                        <button
+                          onClick={() => onSetItemNote?.(item.product.id, '')}
+                          className="text-xs text-muted-foreground hover:text-destructive"
+                        ><X className="w-3 h-3" /></button>
+                      </div>
+                    )}
+                    {/* Note add button (food only, no note yet) */}
+                    {isFood && !item.note && !isEditingNote && onSetItemNote && (
+                      <button
+                        onClick={() => { setEditingNoteFor(item.product.id); setNoteText(''); }}
+                        className="flex items-center gap-0.5 mt-0.5 text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        <MessageSquare className="w-3 h-3" /> Notiz
+                      </button>
+                    )}
+                    {/* Note inline editor */}
+                    {isEditingNote && onSetItemNote && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <input
+                          type="text"
+                          value={noteText}
+                          onChange={(e) => setNoteText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              onSetItemNote(item.product.id, noteText.trim());
+                              setEditingNoteFor(null);
+                            }
+                          }}
+                          placeholder="z.B. ohne Zwiebeln"
+                          autoFocus
+                          className="flex-1 text-xs border border-border rounded px-1.5 py-1 bg-background text-foreground"
+                        />
+                        <button
+                          onClick={() => { onSetItemNote(item.product.id, noteText.trim()); setEditingNoteFor(null); }}
+                          className="text-xs font-semibold text-primary px-1.5 py-1"
+                        >OK</button>
+                        <button
+                          onClick={() => setEditingNoteFor(null)}
+                          className="text-xs text-muted-foreground px-1"
+                        ><X className="w-3 h-3" /></button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 md:gap-2">
+                    <button
+                      onClick={() => handleQuantityChange(item.product.id, -1, item.quantity)}
+                      className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center font-bold text-base md:text-lg"
+                    >
+                      −
+                    </button>
+                    <span className="w-6 md:w-8 text-center font-semibold text-sm md:text-base">{item.quantity}</span>
+                    <button
+                      onClick={() => handleQuantityChange(item.product.id, 1, item.quantity)}
+                      className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center font-bold text-base md:text-lg"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <div className="w-16 md:w-20 text-right font-semibold text-foreground text-sm md:text-base">
+                    {(item.product.price * item.quantity).toFixed(2).replace('.', ',')} €
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 md:gap-2">
-                  <button
-                    onClick={() => handleQuantityChange(item.product.id, -1, item.quantity)}
-                    className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center font-bold text-base md:text-lg"
-                  >
-                    −
-                  </button>
-                  <span className="w-6 md:w-8 text-center font-semibold text-sm md:text-base">{item.quantity}</span>
-                  <button
-                    onClick={() => handleQuantityChange(item.product.id, 1, item.quantity)}
-                    className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center font-bold text-base md:text-lg"
-                  >
-                    +
-                  </button>
-                </div>
-                <div className="w-16 md:w-20 text-right font-semibold text-foreground text-sm md:text-base">
-                  {(item.product.price * item.quantity).toFixed(2).replace('.', ',')} €
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

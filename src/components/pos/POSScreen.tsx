@@ -59,6 +59,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     addToCart,
     removeFromCart,
     updateCartQuantity,
+    setCartItemNote,
     clearCart,
     setNewDeposits,
     setReturnedDeposits,
@@ -252,6 +253,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     selectedTableName,
     tables,
     showDeposit,
+    categories,
     onUpdateQuantity: updateCartQuantity,
     onRemoveItem: removeFromCart,
     onSetNewDeposits: setNewDeposits,
@@ -260,6 +262,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     onSelectTable: handleTableSelect,
     onCheckout: handleCheckout,
     onClearCart: clearCart,
+    onSetItemNote: setCartItemNote,
   };
 
   return (
