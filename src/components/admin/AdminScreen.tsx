@@ -3,7 +3,7 @@ import { useAppStore, Category, Product } from '@/store/useAppStore';
 import { toast } from 'sonner';
 import TableManagement from './TableManagement';
 import PrinterManagement from './PrinterManagement';
-
+import HistoricalStatistics from './HistoricalStatistics';
 import DataSyncManagement from './DataSyncManagement';
 import BackgroundImageUpload from './BackgroundImageUpload';
 import { restoreUmlauts } from '@/lib/searchUtils';
