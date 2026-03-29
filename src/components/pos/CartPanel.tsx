@@ -142,44 +142,87 @@ const CartPanel = ({
               const isFood = categories?.find(c => c.id === item.product.categoryId)?.type === 'food';
               return (
                 <div key={item.product.id} className="cart-item p-1.5 md:p-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground text-sm md:text-base truncate md:whitespace-normal md:line-clamp-2">{item.product.name}</p>
-                    <p className="text-xs md:text-sm text-muted-foreground whitespace-nowrap">
-                      {item.product.price.toFixed(2).replace('.', ',')} € × {item.quantity}
-                    </p>
-                    {item.note && (
-                      <p className="text-xs text-amber-700 mt-0.5 truncate md:whitespace-normal md:line-clamp-2 italic">» {item.note}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 md:gap-2 shrink-0">
-                    {isFood && onSetItemNote && (
+                  {/* Mobile: single-row layout (unchanged) */}
+                  <div className="md:hidden flex items-center gap-1">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-foreground text-sm truncate">{item.product.name}</p>
+                      <p className="text-xs text-muted-foreground whitespace-nowrap">
+                        {item.product.price.toFixed(2).replace('.', ',')} € × {item.quantity}
+                      </p>
+                      {item.note && (
+                        <p className="text-xs text-amber-700 mt-0.5 truncate italic">» {item.note}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {isFood && onSetItemNote && (
+                        <button
+                          onClick={() => { setEditingNoteFor(item.product.id); setNoteText(item.note || ''); }}
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+                            item.note
+                              ? 'bg-amber-100 text-amber-700 border border-amber-300'
+                              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                          }`}
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                        </button>
+                      )}
                       <button
-                        onClick={() => { setEditingNoteFor(item.product.id); setNoteText(item.note || ''); }}
-                        className={`w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center transition-colors ${
-                          item.note
-                            ? 'bg-amber-100 text-amber-700 border border-amber-300'
-                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                        }`}
-                      >
-                        <MessageSquare className="w-4 h-4 md:w-5 md:h-5" />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleQuantityChange(item.product.id, -1, item.quantity)}
-                      className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center font-bold text-base md:text-lg"
-                    >
-                      −
-                    </button>
-                    <span className="w-6 md:w-8 text-center font-semibold text-sm md:text-base">{item.quantity}</span>
-                    <button
-                      onClick={() => handleQuantityChange(item.product.id, 1, item.quantity)}
-                      className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center font-bold text-base md:text-lg"
-                    >
-                      +
-                    </button>
+                        onClick={() => handleQuantityChange(item.product.id, -1, item.quantity)}
+                        className="w-8 h-8 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center font-bold text-base"
+                      >−</button>
+                      <span className="w-6 text-center font-semibold text-sm">{item.quantity}</span>
+                      <button
+                        onClick={() => handleQuantityChange(item.product.id, 1, item.quantity)}
+                        className="w-8 h-8 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center font-bold text-base"
+                      >+</button>
+                    </div>
+                    <div className="w-16 text-right font-semibold text-foreground text-sm whitespace-nowrap">
+                      {(item.product.price * item.quantity).toFixed(2).replace('.', ',')} €
+                    </div>
                   </div>
-                  <div className="w-16 md:w-24 text-right font-semibold text-foreground text-sm md:text-base whitespace-nowrap">
-                    {(item.product.price * item.quantity).toFixed(2).replace('.', ',')} €
+
+                  {/* Tablet/Desktop: two-row layout */}
+                  <div className="hidden md:block">
+                    {/* Row 1: Product name + total price */}
+                    <div className="flex justify-between items-start gap-2">
+                      <p className="font-medium text-foreground text-base flex-1 min-w-0 line-clamp-2">{item.product.name}</p>
+                      <span className="text-base font-semibold text-foreground whitespace-nowrap shrink-0">
+                        {(item.product.price * item.quantity).toFixed(2).replace('.', ',')} €
+                      </span>
+                    </div>
+                    {/* Note preview */}
+                    {item.note && (
+                      <p className="text-xs text-amber-700 mt-0.5 italic line-clamp-2">» {item.note}</p>
+                    )}
+                    {/* Row 2: Unit price + note icon + quantity controls */}
+                    <div className="flex items-center justify-between mt-1.5">
+                      <span className="text-sm text-muted-foreground whitespace-nowrap">
+                        {item.product.price.toFixed(2).replace('.', ',')} € × {item.quantity}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {isFood && onSetItemNote && (
+                          <button
+                            onClick={() => { setEditingNoteFor(item.product.id); setNoteText(item.note || ''); }}
+                            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+                              item.note
+                                ? 'bg-amber-100 text-amber-700 border border-amber-300'
+                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                            }`}
+                          >
+                            <MessageSquare className="w-5 h-5" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleQuantityChange(item.product.id, -1, item.quantity)}
+                          className="w-10 h-10 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center font-bold text-lg"
+                        >−</button>
+                        <span className="w-8 text-center font-semibold text-base">{item.quantity}</span>
+                        <button
+                          onClick={() => handleQuantityChange(item.product.id, 1, item.quantity)}
+                          className="w-10 h-10 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center font-bold text-lg"
+                        >+</button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
