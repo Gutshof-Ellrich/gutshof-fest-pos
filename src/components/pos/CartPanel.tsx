@@ -320,10 +320,10 @@ const CartPanel = ({
         </div>
 
         {/* ToGo Number Preview */}
-        {serviceType === 'togo' && (
+        {serviceType === 'togo' && nextTogoNumber !== null && (
           <div className="mt-2 md:mt-3 bg-amber-50 border-2 border-amber-300 rounded-xl py-2 px-3 text-center">
-            <span className="text-xs text-amber-700 font-medium">Naechste ToGo-Nr:</span>
-            <span className="ml-2 text-lg font-bold text-amber-900 font-mono">{nextTogoNumber}</span>
+            <span className="text-xs text-amber-700 font-medium">Nächste ToGo-Nr:</span>
+            <span className="ml-2 text-lg font-bold text-amber-900 font-mono">TOGO-{nextTogoNumber}</span>
           </div>
         )}
 
