@@ -365,6 +365,47 @@ const CartPanel = ({
         onSelectTable={handleTableSelect}
         selectedTableId={selectedTableId}
       />
+
+      {/* Note Dialog */}
+      {editingNoteFor && onSetItemNote && (
+        <Dialog open={!!editingNoteFor} onOpenChange={(open) => { if (!open) setEditingNoteFor(null); }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Notiz zur Position</DialogTitle>
+            </DialogHeader>
+            <textarea
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              placeholder="z. B. ohne Zwiebeln, Sauce separat, extra knusprig"
+              autoFocus
+              rows={4}
+              className="w-full text-base border border-input rounded-lg px-4 py-3 bg-background text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <DialogFooter className="flex-row gap-2">
+              <button
+                onClick={() => setEditingNoteFor(null)}
+                className="flex-1 py-3 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground font-medium text-sm transition-colors"
+              >Abbrechen</button>
+              <button
+                onClick={() => {
+                  onSetItemNote(editingNoteFor, noteText.trim());
+                  setEditingNoteFor(null);
+                }}
+                className="flex-1 py-3 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm transition-colors"
+              >Speichern</button>
+            </DialogFooter>
+            {noteText.trim() && (
+              <button
+                onClick={() => {
+                  onSetItemNote(editingNoteFor, '');
+                  setEditingNoteFor(null);
+                }}
+                className="w-full py-2 text-sm text-destructive hover:underline"
+              >Notiz löschen</button>
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
