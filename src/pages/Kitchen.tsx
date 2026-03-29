@@ -21,19 +21,31 @@ function getMinutesElapsed(createdAt: string): number {
   return Math.floor((Date.now() - ts) / 60000);
 }
 
+const POLL_OK = 2000;
+const POLL_RETRY = 5000;
+
 const Kitchen = () => {
   const [orders, setOrders] = useState<KitchenOrder[]>([]);
   const [warnMinutes, setWarnMinutes] = useState(5);
+  const [connected, setConnected] = useState(true);
   const [, setTick] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval>>();
   const pollRef = useRef<ReturnType<typeof setInterval>>();
+  const connectedRef = useRef(true);
 
   const loadOrders = useCallback(async () => {
     try {
       const data = await fetchKitchenOrders();
       setOrders(data);
+      if (!connectedRef.current) {
+        connectedRef.current = true;
+        setConnected(true);
+      }
     } catch {
-      // silent – will retry
+      if (connectedRef.current) {
+        connectedRef.current = false;
+        setConnected(false);
+      }
     }
   }, []);
 
@@ -46,14 +58,27 @@ const Kitchen = () => {
     }
   }, []);
 
+  // Adaptive polling: 2s when connected, 5s when disconnected
   useEffect(() => {
     loadOrders();
     loadSettings();
-    pollRef.current = setInterval(loadOrders, 2000);
     intervalRef.current = setInterval(() => setTick((t) => t + 1), 1000);
+
+    const startPoll = () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      pollRef.current = setInterval(loadOrders, connectedRef.current ? POLL_OK : POLL_RETRY);
+    };
+    startPoll();
+
+    // Re-evaluate poll interval every 5s
+    const adaptiveRef = setInterval(() => {
+      startPoll();
+    }, 5000);
+
     return () => {
       clearInterval(pollRef.current);
       clearInterval(intervalRef.current);
+      clearInterval(adaptiveRef);
     };
   }, [loadOrders, loadSettings]);
 
@@ -85,6 +110,17 @@ const Kitchen = () => {
           </button>
         </div>
       </div>
+
+      {/* Connection warning */}
+      {!connected && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl bg-amber-900/60 border border-amber-500 px-5 py-4 text-amber-200">
+          <span className="text-2xl animate-spin">⟳</span>
+          <div>
+            <p className="font-bold text-lg">Verbindung wird neu aufgebaut…</p>
+            <p className="text-sm text-amber-300/80">Automatischer Retry alle 5 Sekunden</p>
+          </div>
+        </div>
+      )}
 
       {/* Grid */}
       {orders.length === 0 ? (
