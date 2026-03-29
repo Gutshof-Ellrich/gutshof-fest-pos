@@ -111,6 +111,17 @@ const Kitchen = () => {
         </div>
       </div>
 
+      {/* Connection warning */}
+      {!connected && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl bg-amber-900/60 border border-amber-500 px-5 py-4 text-amber-200">
+          <span className="text-2xl animate-spin">⟳</span>
+          <div>
+            <p className="font-bold text-lg">Verbindung wird neu aufgebaut…</p>
+            <p className="text-sm text-amber-300/80">Automatischer Retry alle 5 Sekunden</p>
+          </div>
+        </div>
+      )}
+
       {/* Grid */}
       {orders.length === 0 ? (
         <div className="flex items-center justify-center h-[60vh]">
