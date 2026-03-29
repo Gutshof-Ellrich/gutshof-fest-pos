@@ -140,7 +140,6 @@ const CartPanel = ({
           <div className="space-y-1 md:space-y-2">
             {items.map((item) => {
               const isFood = categories?.find(c => c.id === item.product.categoryId)?.type === 'food';
-              const isEditingNote = editingNoteFor === item.product.id;
               return (
                 <div key={item.product.id} className="cart-item p-1.5 md:p-2">
                   <div className="flex-1 min-w-0">
@@ -148,69 +147,23 @@ const CartPanel = ({
                     <p className="text-xs md:text-sm text-muted-foreground">
                       {item.product.price.toFixed(2).replace('.', ',')} € × {item.quantity}
                     </p>
-                    {/* Note display */}
-                    {item.note && !isEditingNote && (
-                      <div className="mt-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <span className="text-xs font-semibold text-amber-800 block mb-0.5">Notiz:</span>
-                            <p className="text-sm text-amber-900 whitespace-pre-wrap break-words">{item.note}</p>
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                            <button
-                              onClick={() => { setEditingNoteFor(item.product.id); setNoteText(item.note || ''); }}
-                              className="w-7 h-7 rounded-md bg-amber-100 hover:bg-amber-200 flex items-center justify-center text-amber-700"
-                            >✎</button>
-                            <button
-                              onClick={() => onSetItemNote?.(item.product.id, '')}
-                              className="w-7 h-7 rounded-md bg-amber-100 hover:bg-destructive/10 flex items-center justify-center text-amber-700 hover:text-destructive"
-                            ><X className="w-4 h-4" /></button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    {/* Note add button (food only, no note yet) */}
-                    {isFood && !item.note && !isEditingNote && onSetItemNote && (
-                      <button
-                        onClick={() => { setEditingNoteFor(item.product.id); setNoteText(''); }}
-                        className="flex items-center gap-1.5 mt-2 px-3 py-2 rounded-lg bg-muted/80 border border-border hover:bg-muted text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
-                      >
-                        <MessageSquare className="w-4 h-4" /> Notiz hinzufügen
-                      </button>
-                    )}
-                    {/* Note inline editor */}
-                    {isEditingNote && onSetItemNote && (
-                      <div className="mt-2 p-2.5 rounded-lg bg-amber-50 border-2 border-amber-300">
-                        <label className="text-xs font-semibold text-amber-800 block mb-1.5">Notiz:</label>
-                        <textarea
-                          value={noteText}
-                          onChange={(e) => setNoteText(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
-                              onSetItemNote(item.product.id, noteText.trim());
-                              setEditingNoteFor(null);
-                            }
-                          }}
-                          placeholder="z. B. ohne Zwiebeln, Sauce separat, extra knusprig"
-                          autoFocus
-                          rows={3}
-                          className="w-full text-sm border border-amber-200 rounded-lg px-3 py-2.5 bg-background text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
-                        />
-                        <div className="flex items-center gap-2 mt-2">
-                          <button
-                            onClick={() => { onSetItemNote(item.product.id, noteText.trim()); setEditingNoteFor(null); }}
-                            className="flex-1 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm transition-colors"
-                          >Speichern</button>
-                          <button
-                            onClick={() => setEditingNoteFor(null)}
-                            className="px-4 py-2.5 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground font-medium text-sm transition-colors"
-                          >Abbrechen</button>
-                        </div>
-                      </div>
+                    {item.note && (
+                      <p className="text-xs text-amber-700 mt-0.5 truncate italic">» {item.note}</p>
                     )}
                   </div>
                   <div className="flex items-center gap-1 md:gap-2">
+                    {isFood && onSetItemNote && (
+                      <button
+                        onClick={() => { setEditingNoteFor(item.product.id); setNoteText(item.note || ''); }}
+                        className={`w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center transition-colors ${
+                          item.note
+                            ? 'bg-amber-100 text-amber-700 border border-amber-300'
+                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                        }`}
+                      >
+                        <MessageSquare className="w-4 h-4 md:w-5 md:h-5" />
+                      </button>
+                    )}
                     <button
                       onClick={() => handleQuantityChange(item.product.id, -1, item.quantity)}
                       className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center font-bold text-base md:text-lg"
