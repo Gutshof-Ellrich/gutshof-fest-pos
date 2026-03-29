@@ -37,7 +37,7 @@ export interface OrderSaveResponse {
 
 export function buildOrderPayload(
   order: Order,
-  categories: { id: string; name: string }[],
+  categories: { id: string; name: string; type?: string }[],
   clientTransactionId?: string,
   terminalId?: string,
 ): OrderPayload {
@@ -57,17 +57,21 @@ export function buildOrderPayload(
     paymentMethod: order.paymentMethod,
     paymentStatus: 'successful',
     currency: 'EUR',
-    items: order.items.map(item => ({
-      productId: item.product.id,
-      productName: item.product.name,
-      categoryName: catMap.get(item.product.categoryId) || '',
-      quantity: item.quantity,
-      unitPrice: item.product.price,
-      deposit: item.product.hasDeposit
-        ? Number(order.deposit?.depositValue ?? (item.product as any).depositValue ?? 0)
-        : 0,
-      note: item.note,
-    })),
+    items: order.items.map(item => {
+      const cat = categories.find(c => c.id === item.product.categoryId);
+      return {
+        productId: item.product.id,
+        productName: item.product.name,
+        categoryName: cat?.name || '',
+        categoryType: cat?.type || 'drinks',
+        quantity: item.quantity,
+        unitPrice: item.product.price,
+        deposit: item.product.hasDeposit
+          ? Number(order.deposit?.depositValue ?? (item.product as any).depositValue ?? 0)
+          : 0,
+        note: item.note,
+      };
+    }),
     payment: order.paymentMethod === 'card'
       ? {
           provider: 'sumup',
