@@ -10,6 +10,7 @@ import { printOrderToMatchingPrinters, fetchPrinters } from '@/services/printSer
 import type { LanPrinter } from '@/types/printer';
 import { toast } from 'sonner';
 import { buildOrderPayload, saveCompletedOrderToBackend } from '@/services/orderService';
+import { createKitchenOrder } from '@/services/kitchenService';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ShoppingCart, Clock, Receipt } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -137,7 +138,30 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
       return; // Do NOT print, do NOT clear cart
     }
 
-    // Save succeeded → continue with existing flow
+    // Save succeeded → send food items to kitchen monitor
+    const foodCategories = categories.filter((c) => c.type === 'food');
+    const foodCatIds = new Set(foodCategories.map((c) => c.id));
+    const foodItems = order.items
+      .filter((item) => foodCatIds.has(item.product.categoryId))
+      .map((item) => ({
+        name: item.product.name,
+        qty: item.quantity,
+        note: item.note || '',
+      }));
+
+    if (foodItems.length > 0) {
+      const orderNum = order.togoNumber !== undefined
+        ? String(order.togoNumber)
+        : order.tableName || order.id.slice(-4);
+      createKitchenOrder({
+        id: `ko-${order.id}`,
+        orderId: order.id,
+        orderNumber: orderNum,
+        createdAt: new Date().toISOString(),
+        items: foodItems,
+      }).catch((err) => console.warn('[kitchen] failed to send:', err));
+    }
+
     setIsSavingOrder(false);
     setPendingOrder(null);
 
