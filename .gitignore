@@ -24,6 +24,7 @@ dist-ssr
 *.sw?
 .env.sumup
 printers.json
+orders.json
 receipt-archive.json
 *.backup-*
 *.bak

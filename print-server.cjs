@@ -8,6 +8,7 @@ const crypto = require("crypto");
 const sumupStatusRoute = require("./sumup-status-route.cjs");
 const posOrdersRoute = require("./pos-orders-route.cjs");
 const cors = require("cors");
+const ORDERS_FILE = path.join(__dirname, "orders.json");
 
 function cryptoRandomId() {
   if (crypto.randomUUID) return crypto.randomUUID();
@@ -219,6 +220,32 @@ function loadArchive() {
 function saveArchive(data) {
   fs.writeFileSync(ARCHIVE_FILE, JSON.stringify(data, null, 2), "utf8");
 }
+
+
+function loadOrders() {
+  try {
+    if (!fs.existsSync(ORDERS_FILE)) return [];
+    const raw = fs.readFileSync(ORDERS_FILE, "utf8");
+    if (!raw.trim()) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    console.error("[orders] load error:", err);
+    return [];
+  }
+}
+
+function saveOrders(data) {
+  try {
+    fs.writeFileSync(ORDERS_FILE, JSON.stringify(data, null, 2), "utf8");
+    return true;
+  } catch (err) {
+    console.error("[orders] save error:", err);
+    return false;
+  }
+}
+
+
 
 // ------------------------------------------------------------
 // Helpers: text sanitize (umlauts + euro)

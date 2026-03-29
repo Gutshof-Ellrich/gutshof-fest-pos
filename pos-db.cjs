@@ -281,25 +281,83 @@ function listOrders(limit = 100) {
   }));
 }
 
-function buildWhereClause(dateFrom, dateTo) {
+function buildWhereClause(dateFrom, dateTo, dateColumn = "created_at") {
   let where = "";
   const params = [];
+
   if (dateFrom && dateTo) {
-    where = "WHERE datetime(created_at) BETWEEN datetime(?) AND datetime(?)";
+    where = `WHERE datetime(${dateColumn}) BETWEEN datetime(?) AND datetime(?)`;
     params.push(dateFrom, dateTo);
   } else if (dateFrom) {
-    where = "WHERE datetime(created_at) >= datetime(?)";
+    where = `WHERE datetime(${dateColumn}) >= datetime(?)`;
     params.push(dateFrom);
   } else if (dateTo) {
-    where = "WHERE datetime(created_at) <= datetime(?)";
+    where = `WHERE datetime(${dateColumn}) <= datetime(?)`;
     params.push(dateTo);
   }
+
   return { where, params };
 }
 
-function getSummary(dateFrom, dateTo) {
-  const { where, params } = buildWhereClause(dateFrom, dateTo);
 
+function normalizeRoleName(roleName) {
+  const value = safeString(roleName, "").trim().toLowerCase();
+
+  if (value === "bar") return "Bar";
+  if (value === "food" || value === "essen") return "Essen";
+  if (value === "combined" || value === "komplett") return "Komplett";
+
+  return safeString(roleName, "Unbekannt").trim() || "Unbekannt";
+}
+
+function classifyCategory(categoryName) {
+  const value = safeString(categoryName, "").trim().toLowerCase();
+
+  if (!value) return "unknown";
+
+  if (
+    value.includes("pfand") ||
+    value.includes("deposit")
+  ) {
+    return "deposit";
+  }
+
+  if (
+    value.includes("wein") ||
+    value.includes("bier") ||
+    value.includes("saft") ||
+    value.includes("wasser") ||
+    value.includes("cocktail") ||
+    value.includes("getränk") ||
+    value.includes("getraenk") ||
+    value.includes("limo") ||
+    value.includes("schnaps") ||
+    value.includes("drink") ||
+    value.includes("schorle") ||
+    value.includes("softdrink")
+  ) {
+    return "drink";
+  }
+
+  if (
+    value.includes("speise") ||
+    value.includes("essen") ||
+    value.includes("flammkuchen") ||
+    value.includes("bratwurst") ||
+    value.includes("steak") ||
+    value.includes("küche") ||
+    value.includes("kueche")
+  ) {
+    return "food";
+  }
+
+  return "food";
+}
+
+
+function getSummary(dateFrom, dateTo) {
+const { where, params } = buildWhereClause(dateFrom, dateTo, "orders.created_at");
+//const { where: hourlyWhere, params: hourlyParams } = buildWhereClause(dateFrom, dateTo, "o.created_at");
   const totals = db.prepare(`
     SELECT
       COUNT(*) AS orders_count,
@@ -325,8 +383,10 @@ function getSummary(dateFrom, dateTo) {
   return { totals, topProducts };
 }
 
-function getDetailedStats(dateFrom, dateTo) {
-  const { where, params } = buildWhereClause(dateFrom, dateTo);
+function getDetailedStats(dateFrom, dateTo, dateSort = "desc") {
+  const safeDateSort = String(dateSort).toLowerCase() === "asc" ? "ASC" : "DESC";
+  const { where, params } = buildWhereClause(dateFrom, dateTo, "orders.created_at");
+  const { where: hourlyWhere, params: hourlyParams } = buildWhereClause(dateFrom, dateTo, "o.created_at");
   const orderSubquery = where ? `SELECT id FROM orders ${where}` : `SELECT id FROM orders`;
 
   const totals = db.prepare(`
@@ -341,67 +401,77 @@ function getDetailedStats(dateFrom, dateTo) {
     FROM orders ${where}
   `).get(...params);
 
-  const byRole = db.prepare(`
-    SELECT
-      COALESCE(role_name, 'unknown') AS role_name,
-      COUNT(*) AS orders_count,
-      COALESCE(SUM(total_cents), 0) AS total_cents,
-      COALESCE(SUM(CASE WHEN payment_method = 'cash' THEN total_cents ELSE 0 END), 0) AS cash_cents,
-      COALESCE(SUM(CASE WHEN payment_method = 'card' THEN total_cents ELSE 0 END), 0) AS card_cents,
-      COALESCE(SUM(CASE WHEN payment_method = 'cash' THEN 1 ELSE 0 END), 0) AS cash_count,
-      COALESCE(SUM(CASE WHEN payment_method = 'card' THEN 1 ELSE 0 END), 0) AS card_count
-    FROM orders ${where}
-    GROUP BY role_name
-    ORDER BY total_cents DESC
-  `).all(...params);
+const byRoleRaw = db.prepare(`
+  SELECT
+    COALESCE(role_name, 'unknown') AS role_name,
+    COUNT(*) AS orders_count,
+    COALESCE(SUM(total_cents), 0) AS total_cents,
+    COALESCE(SUM(CASE WHEN payment_method = 'cash' THEN total_cents ELSE 0 END), 0) AS cash_cents,
+    COALESCE(SUM(CASE WHEN payment_method = 'card' THEN total_cents ELSE 0 END), 0) AS card_cents,
+    COALESCE(SUM(CASE WHEN payment_method = 'cash' THEN 1 ELSE 0 END), 0) AS cash_count,
+    COALESCE(SUM(CASE WHEN payment_method = 'card' THEN 1 ELSE 0 END), 0) AS card_count
+  FROM orders ${where}
+  GROUP BY role_name
+  ORDER BY total_cents DESC
+`).all(...params);
 
-  const topProductsFood = db.prepare(`
-    SELECT
-      oi.product_name,
-      oi.category_name,
-      ROUND(SUM(oi.quantity), 2) AS qty,
-      COALESCE(SUM(oi.line_total_cents), 0) AS revenue_cents
-    FROM order_items oi
-    WHERE oi.order_id IN (${orderSubquery})
-      AND oi.category_name != ''
-      AND oi.order_id IN (
-        SELECT o2.id FROM orders o2
-        JOIN order_items oi2 ON oi2.order_id = o2.id
-        WHERE oi2.product_id = oi.product_id
-      )
-      AND oi.category_name NOT IN (
-        SELECT DISTINCT oi3.category_name FROM order_items oi3
-        WHERE oi3.category_name LIKE '%Wein%' OR oi3.category_name LIKE '%Bier%'
-          OR oi3.category_name LIKE '%Saft%' OR oi3.category_name LIKE '%Wasser%'
-          OR oi3.category_name LIKE '%Cocktail%' OR oi3.category_name LIKE '%Getränk%'
-          OR oi3.category_name LIKE '%Limo%' OR oi3.category_name LIKE '%Schnaps%'
-          OR oi3.category_name LIKE '%Drink%'
-      )
-    GROUP BY oi.product_name
-    ORDER BY qty DESC
-    LIMIT 20
-  `).all(...params);
+const roleMap = new Map();
 
-  const topProductsDrinks = db.prepare(`
-    SELECT
-      oi.product_name,
-      oi.category_name,
-      ROUND(SUM(oi.quantity), 2) AS qty,
-      COALESCE(SUM(oi.line_total_cents), 0) AS revenue_cents
-    FROM order_items oi
-    WHERE oi.order_id IN (${orderSubquery})
-      AND oi.category_name != ''
-      AND (
-        oi.category_name LIKE '%Wein%' OR oi.category_name LIKE '%Bier%'
-        OR oi.category_name LIKE '%Saft%' OR oi.category_name LIKE '%Wasser%'
-        OR oi.category_name LIKE '%Cocktail%' OR oi.category_name LIKE '%Getränk%'
-        OR oi.category_name LIKE '%Limo%' OR oi.category_name LIKE '%Schnaps%'
-        OR oi.category_name LIKE '%Drink%'
-      )
-    GROUP BY oi.product_name
-    ORDER BY qty DESC
-    LIMIT 20
-  `).all(...params);
+for (const row of byRoleRaw) {
+  const normalizedRole = normalizeRoleName(row.role_name);
+  const current = roleMap.get(normalizedRole) || {
+    role_name: normalizedRole,
+    orders_count: 0,
+    total_cents: 0,
+    cash_cents: 0,
+    card_cents: 0,
+    cash_count: 0,
+    card_count: 0
+  };
+
+  current.orders_count += Number(row.orders_count || 0);
+  current.total_cents += Number(row.total_cents || 0);
+  current.cash_cents += Number(row.cash_cents || 0);
+  current.card_cents += Number(row.card_cents || 0);
+  current.cash_count += Number(row.cash_count || 0);
+  current.card_count += Number(row.card_count || 0);
+
+  roleMap.set(normalizedRole, current);
+}
+
+const byRole = Array.from(roleMap.values()).sort((a, b) => b.total_cents - a.total_cents);
+
+const topProductsFoodRaw = db.prepare(`
+  SELECT
+    oi.product_name,
+    oi.category_name,
+    ROUND(SUM(oi.quantity), 2) AS qty,
+    COALESCE(SUM(oi.line_total_cents), 0) AS revenue_cents
+  FROM order_items oi
+  WHERE oi.order_id IN (${orderSubquery})
+  GROUP BY oi.product_name, oi.category_name
+  ORDER BY qty DESC
+`).all(...params);
+
+const topProductsFood = topProductsFoodRaw
+  .filter((row) => classifyCategory(row.category_name) === "food")
+  .sort((a, b) => {
+    if (Number(b.qty || 0) !== Number(a.qty || 0)) {
+      return Number(b.qty || 0) - Number(a.qty || 0);
+    }
+    return Number(b.revenue_cents || 0) - Number(a.revenue_cents || 0);
+  })
+  .slice(0, 20);
+
+const topProductsDrinks = topProductsFoodRaw
+  .filter((row) => classifyCategory(row.category_name) === "drink")
+  .sort((a, b) => {
+    if (Number(b.qty || 0) !== Number(a.qty || 0)) {
+      return Number(b.qty || 0) - Number(a.qty || 0);
+    }
+    return Number(b.revenue_cents || 0) - Number(a.revenue_cents || 0);
+  })
+  .slice(0, 20);
 
   const allProducts = db.prepare(`
     SELECT
@@ -425,17 +495,62 @@ function getDetailedStats(dateFrom, dateTo) {
     ORDER BY hour ASC
   `).all(...params);
 
-  const hourlyProducts = db.prepare(`
-    SELECT
-      CAST(strftime('%H', o.created_at) AS INTEGER) AS hour,
-      oi.product_name,
-      ROUND(SUM(oi.quantity), 2) AS qty
-    FROM order_items oi
-    JOIN orders o ON o.id = oi.order_id
-    ${where ? `${where}` : ""}
-    GROUP BY hour, oi.product_name
-    ORDER BY hour ASC, qty DESC
-  `).all(...params);
+const hourlyProducts = db.prepare(`
+  SELECT
+    CAST(strftime('%H', o.created_at) AS INTEGER) AS hour,
+    oi.product_name,
+    ROUND(SUM(oi.quantity), 2) AS qty
+  FROM order_items oi
+  JOIN orders o ON o.id = oi.order_id
+  ${hourlyWhere ? `${hourlyWhere}` : ""}
+  GROUP BY hour, oi.product_name
+  ORDER BY hour ASC, qty DESC
+`).all(...hourlyParams);
+
+
+const hourlyFoodRows = db.prepare(`
+  SELECT
+    CAST(strftime('%H', o.created_at) AS INTEGER) AS hour,
+    oi.product_name,
+    oi.category_name,
+    ROUND(SUM(oi.quantity), 2) AS qty,
+    COALESCE(SUM(oi.line_total_cents), 0) AS revenue_cents
+  FROM order_items oi
+  JOIN orders o ON o.id = oi.order_id
+  ${hourlyWhere ? `${hourlyWhere}` : ""}
+  GROUP BY hour, oi.product_name, oi.category_name
+  ORDER BY hour ASC, qty DESC, revenue_cents DESC
+`).all(...hourlyParams);
+
+const hourlyFoodMap = {};
+
+for (const row of hourlyFoodRows) {
+  if (classifyCategory(row.category_name) !== "food") continue;
+
+  if (!hourlyFoodMap[row.hour]) {
+    hourlyFoodMap[row.hour] = {
+      hour: row.hour,
+      food_items_count: 0,
+      food_revenue_cents: 0,
+      topProducts: []
+    };
+  }
+
+  hourlyFoodMap[row.hour].food_items_count += Number(row.qty || 0);
+  hourlyFoodMap[row.hour].food_revenue_cents += Number(row.revenue_cents || 0);
+
+  if (hourlyFoodMap[row.hour].topProducts.length < 5) {
+    hourlyFoodMap[row.hour].topProducts.push({
+      product_name: row.product_name,
+      qty: row.qty,
+      revenue_cents: row.revenue_cents
+    });
+  }
+}
+
+
+const hourlyFood = Object.values(hourlyFoodMap).sort((a, b) => a.hour - b.hour);
+
 
   const hourlyMap = {};
   for (const row of hourlyProducts) {
@@ -452,7 +567,7 @@ function getDetailedStats(dateFrom, dateTo) {
       COALESCE(SUM(total_cents), 0) AS total_cents
     FROM orders ${where}
     GROUP BY day
-    ORDER BY day DESC
+    ORDER BY day ${safeDateSort}
   `).all(...params);
 
   return {
@@ -465,6 +580,7 @@ function getDetailedStats(dateFrom, dateTo) {
       ...h,
       topProducts: hourlyMap[h.hour] || []
     })),
+    hourlyFood,
     daily
   };
 }
