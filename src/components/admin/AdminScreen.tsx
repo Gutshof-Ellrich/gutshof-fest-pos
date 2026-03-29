@@ -6,6 +6,7 @@ import PrinterManagement from './PrinterManagement';
 import HistoricalStatistics from './HistoricalStatistics';
 import DataSyncManagement from './DataSyncManagement';
 import BackgroundImageUpload from './BackgroundImageUpload';
+import KitchenSettings from './KitchenSettings';
 import { restoreUmlauts } from '@/lib/searchUtils';
 
 interface MasterDataSyncState {
@@ -20,7 +21,7 @@ interface AdminScreenProps {
   masterDataSync: MasterDataSyncState;
 }
 
-type AdminTab = 'products' | 'categories' | 'tables' | 'deposit' | 'printers' | 'statistics' | 'history' | 'sync' | 'design' | 'migration' | 'help' | 'security';
+type AdminTab = 'products' | 'categories' | 'tables' | 'deposit' | 'printers' | 'statistics' | 'history' | 'kitchen' | 'sync' | 'design' | 'migration' | 'help' | 'security';
 
 const AdminScreen = ({ onLogout, masterDataSync }: AdminScreenProps) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('statistics');
@@ -74,7 +75,7 @@ const AdminScreen = ({ onLogout, masterDataSync }: AdminScreenProps) => {
     { id: 'tables', label: 'Tische' },
     { id: 'deposit', label: 'Pfand' },
     { id: 'printers', label: 'Drucker' },
-    
+    { id: 'kitchen', label: 'Küchenmonitor' },
     { id: 'sync', label: 'Synchronisation' },
     { id: 'design', label: 'Design' },
     { id: 'migration', label: 'Migration' },
@@ -261,6 +262,8 @@ const AdminScreen = ({ onLogout, masterDataSync }: AdminScreenProps) => {
         )}
 
         {activeTab === 'history' && <HistoricalStatistics />}
+
+        {activeTab === 'kitchen' && <KitchenSettings />}
 
         {activeTab === 'deposit' && (
           <div className="space-y-6 animate-fade-in">
