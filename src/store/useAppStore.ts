@@ -53,6 +53,8 @@ export interface Order {
   tableName?: string;
   isPaid: boolean;
   togoNumber?: number;
+  serviceNumber?: number;
+  drinkNumber?: number;
 }
 
 export interface TableTab {

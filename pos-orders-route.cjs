@@ -231,4 +231,50 @@ router.post("/api/backup/create", (req, res) => {
   }
 });
 
+// ── Counter endpoints ────────────────────────────────────
+
+router.post("/api/counters/next/:type", (req, res) => {
+  try {
+    const type = req.params.type; // togo | service | drink
+    if (!["togo", "service", "drink"].includes(type)) {
+      return res.status(400).json({ ok: false, error: "Invalid counter type" });
+    }
+    const value = getNextCounter(type);
+    res.json({ ok: true, type, value });
+  } catch (err) {
+    console.error("[POST /api/counters/next] error:", err);
+    res.status(500).json({ ok: false, error: err.message || String(err) });
+  }
+});
+
+router.post("/api/counters/reset/:type", (req, res) => {
+  try {
+    const type = req.params.type;
+    if (!["togo", "service", "drink"].includes(type)) {
+      return res.status(400).json({ ok: false, error: "Invalid counter type" });
+    }
+    resetCounter(type);
+    res.json({ ok: true, type, value: 0 });
+  } catch (err) {
+    console.error("[POST /api/counters/reset] error:", err);
+    res.status(500).json({ ok: false, error: err.message || String(err) });
+  }
+});
+
+router.get("/api/counters", (req, res) => {
+  try {
+    res.json({
+      ok: true,
+      counters: {
+        togo: getCounterValue("togo"),
+        service: getCounterValue("service"),
+        drink: getCounterValue("drink"),
+      }
+    });
+  } catch (err) {
+    console.error("[GET /api/counters] error:", err);
+    res.status(500).json({ ok: false, error: err.message || String(err) });
+  }
+});
+
 module.exports = router;

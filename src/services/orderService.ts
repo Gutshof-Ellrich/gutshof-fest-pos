@@ -44,7 +44,12 @@ export function buildOrderPayload(
 
   return {
     id: order.id,
-    orderNumber: order.togoNumber !== undefined ? `TOGO-${order.togoNumber}` : order.id,
+    orderNumber: order.togoNumber !== undefined
+      ? `TOGO-${order.togoNumber}`
+      : order.serviceNumber !== undefined
+        ? `SERV-${order.serviceNumber}`
+        : order.id,
+    drinkNumber: order.drinkNumber !== undefined ? `DRINK-${order.drinkNumber}` : undefined,
     orderType: order.serviceType === 'togo' ? 'togo' : 'table',
     sourceDevice: navigator.userAgent.substring(0, 64),
     roleName: String(order.role || 'unknown'),
