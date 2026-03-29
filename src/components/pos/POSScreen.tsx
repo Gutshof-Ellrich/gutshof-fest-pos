@@ -231,20 +231,20 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     const depositSaldo = (deposit.newDeposits - deposit.returnedDeposits) * depositPerGlass;
     const grandTotal = itemsTotal + depositSaldo;
 
-    const togoNumber = (serviceType === 'togo' && payNow) ? getNextTogoNumber() : undefined;
-
-    // Fetch backend counters for service and drink numbers
+    // Fetch backend counters for all number types
+    let togoNumber: number | undefined;
     let serviceNumber: number | undefined;
     let drinkNumber: number | undefined;
 
     if (payNow) {
       const foodCatIds = new Set(categories.filter(c => c.type === 'food').map(c => c.id));
       const drinkCatIds = new Set(categories.filter(c => c.type === 'drinks').map(c => c.id));
-      const hasFoodItems = cart.some(item => foodCatIds.has(item.product.categoryId));
       const hasDrinkItems = cart.some(item => drinkCatIds.has(item.product.categoryId));
 
       try {
-        if (serviceType === 'service' && togoNumber === undefined) {
+        if (serviceType === 'togo') {
+          togoNumber = await fetchNextCounter('togo');
+        } else if (serviceType === 'service') {
           serviceNumber = await fetchNextCounter('service');
         }
         if (hasDrinkItems) {
