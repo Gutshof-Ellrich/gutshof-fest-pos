@@ -6,6 +6,9 @@ const {
   getDetailedStats,
   createBackup,
   pruneBackups,
+  getNextCounter,
+  resetCounter,
+  getCounterValue,
   paths
 } = require("./pos-db.cjs");
 
