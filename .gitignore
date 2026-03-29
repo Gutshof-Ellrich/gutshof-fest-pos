@@ -36,3 +36,6 @@ backup/
 
 # Optional: lokale Stammdaten (nur wenn NICHT gewünscht im Repo)
 masterdata.json
+
+kitchen-orders.json
+kitchen-settings.json

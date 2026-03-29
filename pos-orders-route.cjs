@@ -9,8 +9,114 @@ const {
   paths
 } = require("./pos-db.cjs");
 
+const fs = require("fs");
+const path = require("path");
+const crypto = require("crypto");
+
 const router = express.Router();
 
+const KITCHEN_ORDERS_FILE = path.join(__dirname, "kitchen-orders.json");
+const KITCHEN_SETTINGS_FILE = path.join(__dirname, "kitchen-settings.json");
+
+function readJsonFileSafe(file, fallback) {
+  try {
+    if (!fs.existsSync(file)) return fallback;
+    const raw = fs.readFileSync(file, "utf8");
+    if (!raw.trim()) return fallback;
+    return JSON.parse(raw);
+  } catch (err) {
+    console.error(`[Kitchen JSON READ ERROR] ${file}`, err);
+    return fallback;
+  }
+}
+
+function writeJsonFileSafe(file, value) {
+  try {
+    fs.writeFileSync(file, JSON.stringify(value, null, 2), "utf8");
+    return true;
+  } catch (err) {
+    console.error(`[Kitchen JSON WRITE ERROR] ${file}`, err);
+    return false;
+  }
+}
+
+function loadKitchenOrders() {
+  return readJsonFileSafe(KITCHEN_ORDERS_FILE, []);
+}
+
+function saveKitchenOrders(list) {
+  return writeJsonFileSafe(KITCHEN_ORDERS_FILE, list);
+}
+
+function loadKitchenSettings() {
+  const defaults = {
+    enabled: true,
+    warningMinutes: 5,
+  };
+
+  const saved = readJsonFileSafe(KITCHEN_SETTINGS_FILE, defaults);
+
+  return {
+    enabled: saved.enabled !== false,
+    warningMinutes: Math.max(1, parseInt(saved.warningMinutes, 10) || 5),
+  };
+}
+
+function isFoodCategory(value) {
+  const text = String(value || "").trim().toLowerCase();
+
+  if (!text) return false;
+
+  return (
+    text.includes("speise") ||
+    text.includes("essen") ||
+    text.includes("küche") ||
+    text.includes("kueche") ||
+    text.includes("food")
+  );
+}
+
+function normalizeKitchenItems(order) {
+  const items = Array.isArray(order?.items) ? order.items : [];
+
+  return items
+    .filter((item) => isFoodCategory(item.categoryName || item.category || ""))
+    .map((item) => ({
+      name: String(item.productName || item.name || "Unbekannt"),
+      qty: Number(item.quantity ?? item.qty ?? 1) || 1,
+      note: String(item.note || "").trim() || null,
+    }));
+}
+
+function createKitchenOrderFromOrder(order) {
+  try {
+    const settings = loadKitchenSettings();
+    if (!settings.enabled) return;
+
+    const kitchenItems = normalizeKitchenItems(order);
+    if (!kitchenItems.length) return;
+
+    const kitchenOrders = loadKitchenOrders();
+
+    const alreadyExists = kitchenOrders.some((entry) => entry.orderId === order.id);
+    if (alreadyExists) return;
+
+    kitchenOrders.push({
+      id: crypto.randomUUID ? crypto.randomUUID() : `kitchen-${Date.now()}`,
+      orderId: String(order.id || ""),
+      orderNumber: String(order.order_number || "").trim() || String(order.id || ""),
+      status: "OPEN",
+      createdAt: order.created_at || new Date().toISOString(),
+      doneAt: null,
+      customerNote: String(order.customer_note || "").trim() || null,
+      items: kitchenItems,
+    });
+
+    saveKitchenOrders(kitchenOrders);
+  } catch (err) {
+    console.error("[createKitchenOrderFromOrder] error:", err);
+  }
+}
 
 router.get("/api/db/health", (req, res) => {
   try {
@@ -34,6 +140,7 @@ router.post("/api/orders/save", (req, res) => {
     console.log("[POST /api/orders/save] body:", JSON.stringify(req.body, null, 2));
 
     const order = saveOrder(req.body || {});
+    createKitchenOrderFromOrder(order);
 
     console.log("[POST /api/orders/save] OK:", {
       orderId: order.id,

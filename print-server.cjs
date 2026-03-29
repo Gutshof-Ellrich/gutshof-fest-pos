@@ -152,6 +152,8 @@ app.use(sumupStatusRoute);
 const PRINTERS_FILE = path.join(__dirname, "printers.json");
 const ARCHIVE_FILE = path.join(__dirname, "receipt-archive.json");
 const MASTERDATA_FILE = path.join(__dirname, "masterdata.json");
+const KITCHEN_ORDERS_FILE = path.join(__dirname, "kitchen-orders.json");
+const KITCHEN_SETTINGS_FILE = path.join(__dirname, "kitchen-settings.json");
 
 // ------------------------------------------------------------
 // Helpers: storage
@@ -221,6 +223,58 @@ function saveArchive(data) {
   fs.writeFileSync(ARCHIVE_FILE, JSON.stringify(data, null, 2), "utf8");
 }
 
+function readJsonFileSafe(file, fallback) {
+  try {
+    if (!fs.existsSync(file)) return fallback;
+    const raw = fs.readFileSync(file, "utf8");
+    if (!raw.trim()) return fallback;
+    return JSON.parse(raw);
+  } catch (err) {
+    console.error(`[JSON READ ERROR] ${file}`, err);
+    return fallback;
+  }
+}
+
+function writeJsonFileSafe(file, value) {
+  try {
+    fs.writeFileSync(file, JSON.stringify(value, null, 2), "utf8");
+    return true;
+  } catch (err) {
+    console.error(`[JSON WRITE ERROR] ${file}`, err);
+    return false;
+  }
+}
+
+function loadKitchenOrders() {
+  return readJsonFileSafe(KITCHEN_ORDERS_FILE, []);
+}
+
+function saveKitchenOrders(list) {
+  return writeJsonFileSafe(KITCHEN_ORDERS_FILE, list);
+}
+
+function loadKitchenSettings() {
+  const defaults = {
+    enabled: true,
+    warningMinutes: 5,
+  };
+
+  const saved = readJsonFileSafe(KITCHEN_SETTINGS_FILE, defaults);
+
+  return {
+    enabled: saved.enabled !== false,
+    warningMinutes: Math.max(1, parseInt(saved.warningMinutes, 10) || 5),
+  };
+}
+
+function saveKitchenSettings(settings) {
+  const normalized = {
+    enabled: settings?.enabled !== false,
+    warningMinutes: Math.max(1, parseInt(settings?.warningMinutes, 10) || 5),
+  };
+
+  return writeJsonFileSafe(KITCHEN_SETTINGS_FILE, normalized);
+}
 
 function loadOrders() {
   try {
@@ -636,6 +690,112 @@ app.put("/api/masterdata", (req, res) => {
   saveMasterDataFile(data);
   res.json(data);
 });
+
+// ------------------------------------------------------------
+// Kitchen Monitor API
+// ------------------------------------------------------------
+app.get("/api/kitchen/orders", (req, res) => {
+  try {
+    const orders = loadKitchenOrders()
+      .filter((o) => o && o.status === "OPEN")
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+    res.json({
+      ok: true,
+      orders,
+    });
+  } catch (err) {
+    console.error("[GET /api/kitchen/orders] error:", err);
+    res.status(500).json({
+      ok: false,
+      error: "Küchenbestellungen konnten nicht geladen werden.",
+    });
+  }
+});
+
+app.post("/api/kitchen/order/:id/done", (req, res) => {
+  try {
+    const id = String(req.params.id || "").trim();
+    if (!id) {
+      return res.status(400).json({
+        ok: false,
+        error: "id fehlt",
+      });
+    }
+
+    const orders = loadKitchenOrders();
+    const order = orders.find((o) => o && o.id === id);
+
+    if (!order) {
+      return res.status(404).json({
+        ok: false,
+        error: "Bestellung nicht gefunden",
+      });
+    }
+
+    if (order.status === "DONE") {
+      return res.json({
+        ok: true,
+        alreadyDone: true,
+      });
+    }
+
+    order.status = "DONE";
+    order.doneAt = new Date().toISOString();
+
+    saveKitchenOrders(orders);
+
+    res.json({
+      ok: true,
+    });
+  } catch (err) {
+    console.error("[POST /api/kitchen/order/:id/done] error:", err);
+    res.status(500).json({
+      ok: false,
+      error: "Bestellung konnte nicht quittiert werden.",
+    });
+  }
+});
+
+app.get("/api/settings/kitchen", (req, res) => {
+  try {
+    const settings = loadKitchenSettings();
+
+    res.json({
+      ok: true,
+      settings,
+    });
+  } catch (err) {
+    console.error("[GET /api/settings/kitchen] error:", err);
+    res.status(500).json({
+      ok: false,
+      error: "Kücheneinstellungen konnten nicht geladen werden.",
+    });
+  }
+});
+
+app.put("/api/settings/kitchen", (req, res) => {
+  try {
+    const settings = {
+      enabled: req.body?.enabled !== false,
+      warningMinutes: Math.max(1, parseInt(req.body?.warningMinutes, 10) || 5),
+    };
+
+    saveKitchenSettings(settings);
+
+    res.json({
+      ok: true,
+      settings,
+    });
+  } catch (err) {
+    console.error("[PUT /api/settings/kitchen] error:", err);
+    res.status(500).json({
+      ok: false,
+      error: "Kücheneinstellungen konnten nicht gespeichert werden.",
+    });
+  }
+});
+
 
 // ------------------------------------------------------------
 // Start
