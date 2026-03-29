@@ -143,52 +143,63 @@ const CartPanel = ({
                     </p>
                     {/* Note display */}
                     {item.note && !isEditingNote && (
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <span className="text-xs text-amber-700 italic truncate">» {item.note}</span>
-                        <button
-                          onClick={() => { setEditingNoteFor(item.product.id); setNoteText(item.note || ''); }}
-                          className="text-xs text-muted-foreground hover:text-foreground"
-                        >✎</button>
-                        <button
-                          onClick={() => onSetItemNote?.(item.product.id, '')}
-                          className="text-xs text-muted-foreground hover:text-destructive"
-                        ><X className="w-3 h-3" /></button>
+                      <div className="mt-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <span className="text-xs font-semibold text-amber-800 block mb-0.5">Notiz:</span>
+                            <p className="text-sm text-amber-900 whitespace-pre-wrap break-words">{item.note}</p>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                            <button
+                              onClick={() => { setEditingNoteFor(item.product.id); setNoteText(item.note || ''); }}
+                              className="w-7 h-7 rounded-md bg-amber-100 hover:bg-amber-200 flex items-center justify-center text-amber-700"
+                            >✎</button>
+                            <button
+                              onClick={() => onSetItemNote?.(item.product.id, '')}
+                              className="w-7 h-7 rounded-md bg-amber-100 hover:bg-destructive/10 flex items-center justify-center text-amber-700 hover:text-destructive"
+                            ><X className="w-4 h-4" /></button>
+                          </div>
+                        </div>
                       </div>
                     )}
                     {/* Note add button (food only, no note yet) */}
                     {isFood && !item.note && !isEditingNote && onSetItemNote && (
                       <button
                         onClick={() => { setEditingNoteFor(item.product.id); setNoteText(''); }}
-                        className="flex items-center gap-0.5 mt-0.5 text-xs text-muted-foreground hover:text-foreground"
+                        className="flex items-center gap-1.5 mt-2 px-3 py-2 rounded-lg bg-muted/80 border border-border hover:bg-muted text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
                       >
-                        <MessageSquare className="w-3 h-3" /> Notiz
+                        <MessageSquare className="w-4 h-4" /> Notiz hinzufügen
                       </button>
                     )}
                     {/* Note inline editor */}
                     {isEditingNote && onSetItemNote && (
-                      <div className="flex items-center gap-1 mt-1">
-                        <input
-                          type="text"
+                      <div className="mt-2 p-2.5 rounded-lg bg-amber-50 border-2 border-amber-300">
+                        <label className="text-xs font-semibold text-amber-800 block mb-1.5">Notiz:</label>
+                        <textarea
                           value={noteText}
                           onChange={(e) => setNoteText(e.target.value)}
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
                               onSetItemNote(item.product.id, noteText.trim());
                               setEditingNoteFor(null);
                             }
                           }}
-                          placeholder="z.B. ohne Zwiebeln"
+                          placeholder="z. B. ohne Zwiebeln, Sauce separat, extra knusprig"
                           autoFocus
-                          className="flex-1 text-xs border border-border rounded px-1.5 py-1 bg-background text-foreground"
+                          rows={3}
+                          className="w-full text-sm border border-amber-200 rounded-lg px-3 py-2.5 bg-background text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
                         />
-                        <button
-                          onClick={() => { onSetItemNote(item.product.id, noteText.trim()); setEditingNoteFor(null); }}
-                          className="text-xs font-semibold text-primary px-1.5 py-1"
-                        >OK</button>
-                        <button
-                          onClick={() => setEditingNoteFor(null)}
-                          className="text-xs text-muted-foreground px-1"
-                        ><X className="w-3 h-3" /></button>
+                        <div className="flex items-center gap-2 mt-2">
+                          <button
+                            onClick={() => { onSetItemNote(item.product.id, noteText.trim()); setEditingNoteFor(null); }}
+                            className="flex-1 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm transition-colors"
+                          >Speichern</button>
+                          <button
+                            onClick={() => setEditingNoteFor(null)}
+                            className="px-4 py-2.5 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground font-medium text-sm transition-colors"
+                          >Abbrechen</button>
+                        </div>
                       </div>
                     )}
                   </div>
