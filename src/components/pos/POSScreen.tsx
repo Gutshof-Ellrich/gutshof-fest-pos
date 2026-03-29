@@ -57,7 +57,7 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
     tables,
     tableTabs,
     orders,
-    getNextTogoNumber,
+    
     addToCart,
     removeFromCart,
     updateCartQuantity,
