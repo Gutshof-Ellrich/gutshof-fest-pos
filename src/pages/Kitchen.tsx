@@ -7,14 +7,18 @@ import {
 } from '@/services/kitchenService';
 
 function formatTimer(createdAt: string): string {
-  const diff = Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 1000));
+  const ts = new Date(createdAt).getTime();
+  if (isNaN(ts)) return '00:00';
+  const diff = Math.max(0, Math.floor((Date.now() - ts) / 1000));
   const m = Math.floor(diff / 60);
   const s = diff % 60;
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
 function getMinutesElapsed(createdAt: string): number {
-  return Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000);
+  const ts = new Date(createdAt).getTime();
+  if (isNaN(ts)) return 0;
+  return Math.floor((Date.now() - ts) / 60000);
 }
 
 const Kitchen = () => {
@@ -95,7 +99,7 @@ const Kitchen = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {orders.map((order) => {
-            const isWarning = getMinutesElapsed(order.created_at) >= warnMinutes;
+            const isWarning = getMinutesElapsed(order.createdAt) >= warnMinutes;
             return (
               <div
                 key={order.id}
@@ -109,7 +113,7 @@ const Kitchen = () => {
                 <div className="flex items-start justify-between">
                   <div>
                     <span className="text-3xl font-black tracking-tight">
-                      {order.order_number || order.order_id?.slice(-4) || '?'}
+                      {order.orderNumber || order.orderId?.slice(-4) || '?'}
                     </span>
                   </div>
                   <div
@@ -117,16 +121,23 @@ const Kitchen = () => {
                       isWarning ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-200'
                     }`}
                   >
-                    {formatTimer(order.created_at)}
+                    {formatTimer(order.createdAt)}
                   </div>
                 </div>
+
+                {/* Customer note */}
+                {order.customerNote && (
+                  <div className="text-sky-400 font-bold text-base bg-sky-950/40 rounded-lg px-3 py-2">
+                    Bestellhinweis: {order.customerNote}
+                  </div>
+                )}
 
                 {/* Items */}
                 <div className="flex-1 space-y-2">
                   {order.items.map((item, idx) => (
                     <div key={idx}>
                       <div className="text-lg font-semibold">
-                        {item.qty}× {item.product_name}
+                        {item.qty}× {item.name}
                       </div>
                       {item.note && (
                         <div className="text-amber-400 font-bold text-base ml-4">
