@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { CartItem, Category, DepositInfo, ServiceType, Table, useAppStore } from '@/store/useAppStore';
+import { useState, useEffect } from 'react';
+import { CartItem, Category, DepositInfo, ServiceType, Table } from '@/store/useAppStore';
 import TableSelector from './TableSelector';
 import { MessageSquare, X } from 'lucide-react';
 
@@ -47,8 +47,23 @@ const CartPanel = ({
   const [showTableSelector, setShowTableSelector] = useState(false);
   const [editingNoteFor, setEditingNoteFor] = useState<string | null>(null);
   const [noteText, setNoteText] = useState('');
-  const togoCounter = useAppStore((s) => s.togoCounter);
-  const nextTogoNumber = (togoCounter + 1) % 1001;
+  const [nextTogoNumber, setNextTogoNumber] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (serviceType !== 'togo') return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch('http://192.168.188.200:3444/api/counters');
+        const data = await res.json();
+        if (!cancelled) setNextTogoNumber((data.counters?.togo ?? 0) + 1);
+      } catch {
+        if (!cancelled) setNextTogoNumber(null);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [serviceType]);
 
   const itemsTotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const depositNew = showDeposit ? deposit.newDeposits * depositPerGlass : 0;
@@ -305,10 +320,10 @@ const CartPanel = ({
         </div>
 
         {/* ToGo Number Preview */}
-        {serviceType === 'togo' && (
+        {serviceType === 'togo' && nextTogoNumber !== null && (
           <div className="mt-2 md:mt-3 bg-amber-50 border-2 border-amber-300 rounded-xl py-2 px-3 text-center">
-            <span className="text-xs text-amber-700 font-medium">Naechste ToGo-Nr:</span>
-            <span className="ml-2 text-lg font-bold text-amber-900 font-mono">{nextTogoNumber}</span>
+            <span className="text-xs text-amber-700 font-medium">Nächste ToGo-Nr:</span>
+            <span className="ml-2 text-lg font-bold text-amber-900 font-mono">TOGO-{nextTogoNumber}</span>
           </div>
         )}
 
