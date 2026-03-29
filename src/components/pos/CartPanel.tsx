@@ -141,17 +141,17 @@ const CartPanel = ({
             {items.map((item) => {
               const isFood = categories?.find(c => c.id === item.product.categoryId)?.type === 'food';
               return (
-                <div key={item.product.id} className="cart-item p-1.5 md:p-2">
+                <div key={item.product.id} className="cart-item p-1.5 md:p-3">
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground text-sm md:text-base truncate">{item.product.name}</p>
-                    <p className="text-xs md:text-sm text-muted-foreground">
+                    <p className="font-medium text-foreground text-sm md:text-base truncate md:whitespace-normal md:line-clamp-2">{item.product.name}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground whitespace-nowrap">
                       {item.product.price.toFixed(2).replace('.', ',')} € × {item.quantity}
                     </p>
                     {item.note && (
-                      <p className="text-xs text-amber-700 mt-0.5 truncate italic">» {item.note}</p>
+                      <p className="text-xs text-amber-700 mt-0.5 truncate md:whitespace-normal md:line-clamp-2 italic">» {item.note}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-1 md:gap-2">
+                  <div className="flex items-center gap-1 md:gap-2 shrink-0">
                     {isFood && onSetItemNote && (
                       <button
                         onClick={() => { setEditingNoteFor(item.product.id); setNoteText(item.note || ''); }}
@@ -178,7 +178,7 @@ const CartPanel = ({
                       +
                     </button>
                   </div>
-                  <div className="w-16 md:w-20 text-right font-semibold text-foreground text-sm md:text-base">
+                  <div className="w-16 md:w-24 text-right font-semibold text-foreground text-sm md:text-base whitespace-nowrap">
                     {(item.product.price * item.quantity).toFixed(2).replace('.', ',')} €
                   </div>
                 </div>
