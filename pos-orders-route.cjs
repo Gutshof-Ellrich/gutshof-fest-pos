@@ -65,11 +65,15 @@ function loadKitchenSettings() {
   };
 }
 
-function isFoodCategory(value) {
-  const text = String(value || "").trim().toLowerCase();
+function isFoodItem(item) {
+  // Primary: check categoryType field (set by frontend from admin dropdown)
+  const cType = String(item.categoryType || "").trim().toLowerCase();
+  if (cType === "food") return true;
+  if (cType === "drinks") return false;
 
+  // Fallback: keyword matching on category name for legacy orders
+  const text = String(item.categoryName || item.category || "").trim().toLowerCase();
   if (!text) return false;
-
   return (
     text.includes("speise") ||
     text.includes("essen") ||
