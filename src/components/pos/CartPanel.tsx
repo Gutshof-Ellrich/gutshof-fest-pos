@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { CartItem, Category, DepositInfo, ServiceType, Table } from '@/store/useAppStore';
 import TableSelector from './TableSelector';
-import { MessageSquare, X } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
