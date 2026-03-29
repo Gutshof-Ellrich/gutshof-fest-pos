@@ -47,8 +47,23 @@ const CartPanel = ({
   const [showTableSelector, setShowTableSelector] = useState(false);
   const [editingNoteFor, setEditingNoteFor] = useState<string | null>(null);
   const [noteText, setNoteText] = useState('');
-  const togoCounter = useAppStore((s) => s.togoCounter);
-  const nextTogoNumber = (togoCounter + 1) % 1001;
+  const [nextTogoNumber, setNextTogoNumber] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (serviceType !== 'togo') return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch('http://192.168.188.200:3444/api/counters');
+        const data = await res.json();
+        if (!cancelled) setNextTogoNumber((data.counters?.togo ?? 0) + 1);
+      } catch {
+        if (!cancelled) setNextTogoNumber(null);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [serviceType]);
 
   const itemsTotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const depositNew = showDeposit ? deposit.newDeposits * depositPerGlass : 0;
