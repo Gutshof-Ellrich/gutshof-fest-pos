@@ -6,6 +6,7 @@ const ORDERS_SAVE_ENDPOINT = `${LOCAL_BACKEND_URL}/api/orders/save`;
 export interface OrderPayload {
   id: string;
   orderNumber: string;
+  drinkNumber?: string;
   orderType: 'togo' | 'table';
   sourceDevice: string;
   roleName: string;
