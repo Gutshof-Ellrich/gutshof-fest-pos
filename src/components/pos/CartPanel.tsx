@@ -63,7 +63,7 @@ const CartPanel = ({
     };
     load();
     return () => { cancelled = true; };
-  }, [serviceType]);
+  }, [serviceType, items.length]);
 
   const itemsTotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const depositNew = showDeposit ? deposit.newDeposits * depositPerGlass : 0;
