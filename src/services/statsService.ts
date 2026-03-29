@@ -24,6 +24,13 @@ export interface StatsHourly {
   topProducts: { product_name: string; qty: number }[];
 }
 
+export interface StatsHourlyFood {
+  hour: number;
+  food_items_count: number;
+  food_revenue_cents: number;
+  topProducts: { product_name: string; qty: number; revenue_cents: number }[];
+}
+
 export interface StatsDaily {
   day: string;
   orders_count: number;
@@ -46,57 +53,27 @@ export interface DetailedStats {
   topProductsDrinks: StatsProduct[];
   allProducts: StatsProduct[];
   hourly: StatsHourly[];
+  hourlyFood: StatsHourlyFood[];
   daily: StatsDaily[];
 }
 
-export type DatePreset =
-  | 'today'
-  | 'yesterday'
-  | 'last7'
-  | 'last30'
-  | 'thisMonth'
-  | 'lastMonth'
-  | 'custom';
+export type DatePreset = 'today' | 'yesterday' | 'thisWeek' | 'custom';
 
 export function getDateRange(preset: DatePreset, customFrom?: Date, customTo?: Date): { dateFrom: string; dateTo: string } {
   const now = new Date();
-  const startOfDay = (d: Date) => {
-    const r = new Date(d);
-    r.setHours(0, 0, 0, 0);
-    return r;
-  };
-  const endOfDay = (d: Date) => {
-    const r = new Date(d);
-    r.setHours(23, 59, 59, 999);
-    return r;
-  };
+  const startOfDay = (d: Date) => { const r = new Date(d); r.setHours(0, 0, 0, 0); return r; };
+  const endOfDay = (d: Date) => { const r = new Date(d); r.setHours(23, 59, 59, 999); return r; };
 
   switch (preset) {
     case 'today':
       return { dateFrom: startOfDay(now).toISOString(), dateTo: endOfDay(now).toISOString() };
     case 'yesterday': {
-      const y = new Date(now);
-      y.setDate(y.getDate() - 1);
+      const y = new Date(now); y.setDate(y.getDate() - 1);
       return { dateFrom: startOfDay(y).toISOString(), dateTo: endOfDay(y).toISOString() };
     }
-    case 'last7': {
-      const d = new Date(now);
-      d.setDate(d.getDate() - 6);
+    case 'thisWeek': {
+      const d = new Date(now); d.setDate(d.getDate() - 6);
       return { dateFrom: startOfDay(d).toISOString(), dateTo: endOfDay(now).toISOString() };
-    }
-    case 'last30': {
-      const d = new Date(now);
-      d.setDate(d.getDate() - 29);
-      return { dateFrom: startOfDay(d).toISOString(), dateTo: endOfDay(now).toISOString() };
-    }
-    case 'thisMonth': {
-      const first = new Date(now.getFullYear(), now.getMonth(), 1);
-      return { dateFrom: startOfDay(first).toISOString(), dateTo: endOfDay(now).toISOString() };
-    }
-    case 'lastMonth': {
-      const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const last = new Date(now.getFullYear(), now.getMonth(), 0);
-      return { dateFrom: startOfDay(first).toISOString(), dateTo: endOfDay(last).toISOString() };
     }
     case 'custom':
       return {
