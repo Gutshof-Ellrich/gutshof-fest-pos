@@ -201,11 +201,13 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
       : '';
 
     if (order.isPaid) {
-      const togoInfo = order.serviceType === 'togo' && order.togoNumber !== undefined ? ` | ToGo-Nr: ${order.togoNumber}` : '';
+      const togoInfo = order.serviceType === 'togo' && order.togoNumber !== undefined ? ` | TOGO-${order.togoNumber}` : '';
+      const servInfo = order.serviceNumber !== undefined ? ` | SERV-${order.serviceNumber}` : '';
+      const drinkInfo = order.drinkNumber !== undefined ? ` | DRINK-${order.drinkNumber}` : '';
       toast.success(
         `Bestellung ${order.serviceType === 'togo' ? 'TO GO' : 'SERVICE'}${tableInfo} abgeschlossen`,
         {
-          description: `${order.grandTotal.toFixed(2).replace('.', ',')} € - ${order.paymentMethod === 'cash' ? 'Bar' : 'Karte'}${togoInfo}`,
+          description: `${order.grandTotal.toFixed(2).replace('.', ',')} € - ${order.paymentMethod === 'cash' ? 'Bar' : 'Karte'}${togoInfo}${servInfo}${drinkInfo}`,
         }
       );
     } else {
