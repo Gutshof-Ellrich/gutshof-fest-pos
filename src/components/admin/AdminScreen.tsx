@@ -22,7 +22,7 @@ interface AdminScreenProps {
   masterDataSync: MasterDataSyncState;
 }
 
-type AdminTab = 'products' | 'categories' | 'tables' | 'deposit' | 'printers' | 'statistics' | 'history' | 'kitchen' | 'sync' | 'design' | 'migration' | 'help' | 'security';
+type AdminTab = 'products' | 'categories' | 'tables' | 'deposit' | 'printers' | 'statistics' | 'history' | 'kitchen' | 'counters' | 'sync' | 'design' | 'migration' | 'help' | 'security';
 
 const AdminScreen = ({ onLogout, masterDataSync }: AdminScreenProps) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('statistics');
@@ -77,6 +77,7 @@ const AdminScreen = ({ onLogout, masterDataSync }: AdminScreenProps) => {
     { id: 'deposit', label: 'Pfand' },
     { id: 'printers', label: 'Drucker' },
     { id: 'kitchen', label: 'Küchenmonitor' },
+    { id: 'counters', label: 'Bestellnummern' },
     { id: 'sync', label: 'Synchronisation' },
     { id: 'design', label: 'Design' },
     { id: 'migration', label: 'Migration' },
