@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react';
 import { CartItem, Category, DepositInfo, ServiceType, Table } from '@/store/useAppStore';
 import TableSelector from './TableSelector';
-import { MessageSquare, X } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 interface CartPanelProps {
   items: CartItem[];
