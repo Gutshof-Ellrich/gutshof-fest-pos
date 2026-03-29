@@ -604,6 +604,34 @@ function pruneBackups(days = 7) {
   }
 }
 
+// ── Order-number counters ────────────────────────────────────
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS counters (
+  name TEXT PRIMARY KEY,
+  value INTEGER NOT NULL DEFAULT 0
+);
+`);
+
+function getNextCounter(name) {
+  const upsert = db.prepare(`
+    INSERT INTO counters (name, value) VALUES (?, 1)
+    ON CONFLICT(name) DO UPDATE SET value = value + 1
+  `);
+  upsert.run(name);
+  const row = db.prepare(`SELECT value FROM counters WHERE name = ?`).get(name);
+  return row ? row.value : 1;
+}
+
+function resetCounter(name) {
+  db.prepare(`INSERT INTO counters (name, value) VALUES (?, 0) ON CONFLICT(name) DO UPDATE SET value = 0`).run(name);
+}
+
+function getCounterValue(name) {
+  const row = db.prepare(`SELECT value FROM counters WHERE name = ?`).get(name);
+  return row ? row.value : 0;
+}
+
 module.exports = {
   db,
   saveOrder,
@@ -612,6 +640,9 @@ module.exports = {
   getDetailedStats,
   createBackup,
   pruneBackups,
+  getNextCounter,
+  resetCounter,
+  getCounterValue,
   paths: {
     DATA_DIR,
     BACKUP_DIR,

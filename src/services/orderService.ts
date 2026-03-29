@@ -6,6 +6,7 @@ const ORDERS_SAVE_ENDPOINT = `${LOCAL_BACKEND_URL}/api/orders/save`;
 export interface OrderPayload {
   id: string;
   orderNumber: string;
+  drinkNumber?: string;
   orderType: 'togo' | 'table';
   sourceDevice: string;
   roleName: string;
@@ -44,7 +45,12 @@ export function buildOrderPayload(
 
   return {
     id: order.id,
-    orderNumber: order.togoNumber !== undefined ? `TOGO-${order.togoNumber}` : order.id,
+    orderNumber: order.togoNumber !== undefined
+      ? `TOGO-${order.togoNumber}`
+      : order.serviceNumber !== undefined
+        ? `SERV-${order.serviceNumber}`
+        : order.id,
+    drinkNumber: order.drinkNumber !== undefined ? `DRINK-${order.drinkNumber}` : undefined,
     orderType: order.serviceType === 'togo' ? 'togo' : 'table',
     sourceDevice: navigator.userAgent.substring(0, 64),
     roleName: String(order.role || 'unknown'),
