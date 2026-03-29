@@ -1,18 +1,19 @@
 const API_BASE = 'http://192.168.188.200:3444';
 
 export interface KitchenOrderItem {
-  product_name: string;
+  name: string;
   qty: number;
-  note: string;
+  note: string | null;
 }
 
 export interface KitchenOrder {
   id: string;
-  order_id: string;
-  order_number: string;
+  orderId: string;
+  orderNumber: string;
   status: 'OPEN' | 'DONE';
-  created_at: string;
-  done_at: string | null;
+  createdAt: string;
+  doneAt: string | null;
+  customerNote: string | null;
   items: KitchenOrderItem[];
 }
 
@@ -54,7 +55,11 @@ export async function fetchKitchenSettings(): Promise<KitchenSettings> {
   const res = await fetch(`${API_BASE}/api/settings/kitchen`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
-  return { enabled: data.enabled, warn_minutes: data.warn_minutes };
+  const settings = data.settings || data;
+  return {
+    enabled: settings.enabled ?? data.enabled,
+    warn_minutes: settings.warningMinutes ?? settings.warn_minutes ?? data.warn_minutes ?? 5,
+  };
 }
 
 export async function updateKitchenSettings(
