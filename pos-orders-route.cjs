@@ -87,7 +87,7 @@ function normalizeKitchenItems(order) {
   const items = Array.isArray(order?.items) ? order.items : [];
 
   return items
-    .filter((item) => isFoodCategory(item.categoryName || item.category || ""))
+    .filter((item) => isFoodItem(item))
     .map((item) => ({
       name: String(item.productName || item.name || "Unbekannt"),
       qty: Number(item.quantity ?? item.qty ?? 1) || 1,
