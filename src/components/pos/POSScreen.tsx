@@ -11,6 +11,7 @@ import type { LanPrinter } from '@/types/printer';
 import { toast } from 'sonner';
 import { buildOrderPayload, saveCompletedOrderToBackend } from '@/services/orderService';
 import { createKitchenOrder } from '@/services/kitchenService';
+import { fetchNextCounter } from '@/services/counterService';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ShoppingCart, Clock, Receipt } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -151,8 +152,10 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
 
     if (foodItems.length > 0) {
       const orderNum = order.togoNumber !== undefined
-        ? String(order.togoNumber)
-        : order.tableName || order.id.slice(-4);
+        ? `TOGO-${order.togoNumber}`
+        : order.serviceNumber !== undefined
+          ? `SERV-${order.serviceNumber}`
+          : order.tableName || order.id.slice(-4);
       createKitchenOrder({
         id: `ko-${order.id}`,
         orderId: order.id,
@@ -228,6 +231,28 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
 
     const togoNumber = (serviceType === 'togo' && payNow) ? getNextTogoNumber() : undefined;
 
+    // Fetch backend counters for service and drink numbers
+    let serviceNumber: number | undefined;
+    let drinkNumber: number | undefined;
+
+    if (payNow) {
+      const foodCatIds = new Set(categories.filter(c => c.type === 'food').map(c => c.id));
+      const drinkCatIds = new Set(categories.filter(c => c.type === 'drinks').map(c => c.id));
+      const hasFoodItems = cart.some(item => foodCatIds.has(item.product.categoryId));
+      const hasDrinkItems = cart.some(item => drinkCatIds.has(item.product.categoryId));
+
+      try {
+        if (serviceType === 'service' && togoNumber === undefined) {
+          serviceNumber = await fetchNextCounter('service');
+        }
+        if (hasDrinkItems) {
+          drinkNumber = await fetchNextCounter('drink');
+        }
+      } catch (err) {
+        console.warn('[checkout] counter fetch failed, using fallback', err);
+      }
+    }
+
     const order: Order = {
       id: `order-${Date.now()}`,
       items: [...cart],
@@ -245,6 +270,8 @@ const POSScreen = ({ role, onLogout }: POSScreenProps) => {
       tableName: serviceType === 'service' ? selectedTableName || undefined : undefined,
       isPaid: payNow,
       togoNumber,
+      serviceNumber,
+      drinkNumber,
     };
 
     await finalizeOrder(order);

@@ -7,6 +7,7 @@ import HistoricalStatistics from './HistoricalStatistics';
 import DataSyncManagement from './DataSyncManagement';
 import BackgroundImageUpload from './BackgroundImageUpload';
 import KitchenSettings from './KitchenSettings';
+import OrderNumberReset from './OrderNumberReset';
 import { restoreUmlauts } from '@/lib/searchUtils';
 
 interface MasterDataSyncState {
