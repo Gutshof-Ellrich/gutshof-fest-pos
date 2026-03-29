@@ -37,7 +37,7 @@ export interface OrderSaveResponse {
 
 export function buildOrderPayload(
   order: Order,
-  categories: { id: string; name: string }[],
+  categories: { id: string; name: string; type?: string }[],
   clientTransactionId?: string,
   terminalId?: string,
 ): OrderPayload {
